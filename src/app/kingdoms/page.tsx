@@ -132,13 +132,16 @@ export default function Kingdoms() {
   const sortKingdoms = (key: string) => {
     const direction = sortConfig.direction === "ASC" ? "DESC" : "ASC";
     setSortConfig({ key, direction });
-
+  
     const sortedKingdoms = [...filteredKingdoms].sort((a, b) => {
-      if (a[key] < b[key]) return direction === "ASC" ? -1 : 1;
-      if (a[key] > b[key]) return direction === "ASC" ? 1 : -1;
+      const aValue = a[key as keyof Kingdom] ?? ''; // Default to 0 if undefined
+      const bValue = b[key as keyof Kingdom] ?? ''; // Default to 0 if undefined
+  
+      if (aValue < bValue) return direction === "ASC" ? -1 : 1;
+      if (aValue > bValue) return direction === "ASC" ? 1 : -1;
       return 0;
     });
-
+  
     setFilteredKingdoms(sortedKingdoms);
   };
 
