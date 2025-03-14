@@ -1,0 +1,135 @@
+/* FilterBar.module.css */
+
+/* Filter Bar */
+.filterBar {
+    margin: 20px auto;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    width: 90%;
+    max-width: 1200px;
+    transition: box-shadow 0.3s ease;
+  }
+  
+  /* Range Container */
+  .rangeContainer {
+    display: flex;
+    flex-direction: column; /* Stack elements vertically */
+    width: 100%;
+    margin-bottom: 1rem;
+  }
+  
+  /* Wrapper for Slider and Labels */
+  .sliderWrapper {
+    display: flex;
+    align-items: center; /* Vertically center the slider and labels */
+    width: 100%;
+    position: relative; /* Important for absolute positioning of labels */
+  }
+  
+  /* Range Slider */
+  .rangeInput {
+    width: 40%;       /* Controls the slider's width */
+    margin: 0.5rem 0;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    height: 12px;
+    -webkit-appearance: none;
+    appearance: none;
+    transition: background-color 0.3s ease;
+  }
+  
+  /* Range Slider Hover Effect */
+  .rangeInput:hover {
+    background-color: #d1d1d1;
+  }
+  
+  /* Styling for Range Slider Thumb */
+  .rangeInput::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #007bff;
+    cursor: pointer;
+  }
+  
+  .rangeInput::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background-color: #007bff;
+    cursor: pointer;
+  }
+  
+  /* Range Labels (Absolutely positioned) */
+  .rangeLabels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #555;
+    margin-top: 5px;
+    width: 40%; /* Same width as the slider */
+    position: absolute; /* Take out of the normal flow */
+    left: 0; /* Start at the left edge of .sliderWrapper */
+    top: 100%;    /*Position range labels below range input*/
+  }
+  
+  .rangeLabels span:first-child {
+      position: absolute;
+      left: 0;
+  }
+  .rangeLabels span:last-child {
+      position: absolute;
+      right: -20%;
+  }
+  
+  
+  /* Label Styling */
+  .label {
+    font-size: 1rem;
+    color: #000;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    display: block;
+    margin-bottom: 50px;
+
+  }
+  
+  /* Additional Media Queries for Responsiveness */
+  @media (max-width: 768px) {
+    .filterBar {
+      width: 100%;
+      padding: 15px;
+    }
+  
+    .rangeInput,
+    .rangeLabels {
+      width: 100%; /* Full width on smaller screens */
+    }
+  
+    .rangeContainer {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  
+    .rangeLabels {
+      font-size: 12px;
+        position: relative; /*on smaller screen make position relative*/
+  
+    }
+    .rangeLabels span:first-child, .rangeLabels span:last-child {
+      position: static; /*on smaller screen make position relative*/
+  }
+  
+    .label {
+      font-size: 0.9rem;
+    }
+  
+    .sliderWrapper {
+      flex-direction: column;
+    }
+  }

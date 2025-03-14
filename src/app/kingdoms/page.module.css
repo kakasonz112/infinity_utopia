@@ -1,0 +1,182 @@
+/* page.module.css */
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 2rem;
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+  }
+  
+  .heading {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: #333;
+    letter-spacing: 1px;
+  }
+  
+  .info {
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    color: #666;
+    line-height: 1.6;
+    text-align: center; /* Center-align date info */
+  }
+  
+  .info span {
+    font-weight: bold;
+    color: #222;
+  }
+  
+  .kingdomsTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add shadow to the table */
+    border-radius: 8px; /* Rounded corners for the table */
+    overflow: hidden; /* Ensure rounded corners are visible */
+  }
+  
+  .kingdomsTable th {
+    background: #f4f4f4;
+    text-align: left;
+    padding: 1rem;
+    font-size: 1rem;
+    color: #333;
+    border-bottom: 2px solid #ddd;
+  }
+  
+  .kingdomsTable td {
+    padding: 1rem;
+    font-size: 0.95rem;
+    color: #555;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .kingdomsTable tbody tr:hover {
+    background: #f1f1f1;
+  }
+  
+  .provinceTable {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+  }
+  
+  .provinceTable th,
+  .provinceTable td {
+    text-align: left;
+    padding: 0.75rem;
+    border: 1px solid #e0e0e0;
+  }
+  
+  .provinceTable thead th {
+    background-color: #f0f0f0;
+  }
+  
+  .expandedRow {
+    background-color: #f9f9f9; /* Slightly different background for expanded rows */
+  }
+  
+  .expandButton {
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-size: 1rem;
+    color: #007bff; /* Blue color for expand/collapse */
+    padding: 0; /* Remove padding */
+    margin-right: 0.5rem; /* Add some spacing */
+  }
+  
+  .raceDistribution {
+    margin-top: 2rem;
+    padding: 1rem;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .raceDistribution h3 {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #444;
+  }
+  
+  .raceList {
+    list-style: none; /* Remove bullet points */
+    padding: 0;
+    margin: 0;
+  }
+  
+  .raceList li {
+    margin-bottom: 0.25rem; /* Space out the list items a bit */
+  }
+  
+  .raceList strong {
+    margin-right: 0.5rem;
+  }
+  
+  /* Mobile-specific styles */
+  @media (max-width: 768px) {
+    .container {
+      padding: 1rem;
+    }
+  
+    .heading {
+      font-size: 2rem;
+      margin-bottom: 1.2rem;
+    }
+  
+    .info {
+      font-size: 0.9rem;
+    }
+  
+    .kingdomsTable th,
+    .kingdomsTable td {
+      font-size: 0.85rem;
+      padding: 0.75rem;
+    }
+  
+    .provinceTable th,
+    .provinceTable td {
+      font-size: 0.8rem; /* Smaller font size for mobile */
+      padding: 0.5rem;    /* Less padding for mobile */
+    }
+  
+    .expandButton {
+      font-size: 0.9rem; /* Smaller font size for expand button */
+    }
+  
+    /* Ensure tables are scrollable horizontally on small screens */
+    .kingdomsTable,
+    .provinceTable {
+      display: block;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+  
+    /* Reduce the space between the table header and the content */
+    .kingdomsTable td,
+    .kingdomsTable th {
+      padding: 0.5rem;
+    }
+  
+    .raceDistribution {
+      padding: 0.75rem;
+    }
+  
+    .raceDistribution h3 {
+      font-size: 1rem; /* Smaller font size for race section */
+    }
+  }
+  
+  /* Add smooth scroll behavior for mobile */
+  html {
+    scroll-behavior: smooth;
+  }
+  
