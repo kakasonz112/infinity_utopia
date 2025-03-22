@@ -43,12 +43,14 @@ type Filters = {
 
 export default function Kingdoms() {
   const [data, setData] = useState<KingdomsData | null>(null);
+  const [biggestNetworth, setNetworth] = useState<Number | null>(0);
+  const [biggestLand, setLand] = useState<Number | null>(0);
   const [filteredKingdoms, setFilteredKingdoms] = useState<Kingdom[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<Filters>({
-    land: [496, 232916],
-    networth: [65988, 59223582],
-    provinces: [1, 25],
+    land: [0, 0],
+    networth: [0, 0],
+    provinces: [0, 0],
   });
   const [debouncedFilters, setDebouncedFilters] = useState<Filters>(filters);
   const [isLoading, setIsLoading] = useState(true);
@@ -81,7 +83,9 @@ export default function Kingdoms() {
           throw new Error("Failed to fetch kingdoms data");
         }
         const result = await res.json();
-        setData(result);
+        setData(result.kingdoms);
+        setNetworth(result.biggestNetworthKingdom?.networth);
+        setLand(result.biggestLandKingdom?.totalLand);
         setIsLoading(false);
       } catch (error) {
         console.error("Error fetching kingdoms data:", error);
@@ -186,7 +190,7 @@ export default function Kingdoms() {
         </p>
       </div>
 
-      <FilterBar onFilterChange={handleFilterChange} />
+      <FilterBar onFilterChange={handleFilterChange} biggestLand={biggestLand} biggestNetworth={biggestNetworth} />
 
       <table className={styles.kingdomsTable}>
         <thead>

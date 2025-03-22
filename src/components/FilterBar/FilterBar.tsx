@@ -3,6 +3,16 @@
 import { useState, useCallback, useEffect } from "react";
 import styles from "./FilterBar.module.css"; // Import the CSS Module
 
+function roundToNearest50000(num: number): number {
+  const rounded = Math.round(num / 50000) * 50000;
+  return rounded;
+}
+
+function roundToNearest100(num: number): number {
+  const rounded = Math.round(num / 100) * 100;
+  return rounded;
+}
+
 // Debounce utility function (same as before)
 const useDebounce = (value: any, delay: number) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -28,12 +38,14 @@ type Filters = {
 
 type FilterBarProps = {
   onFilterChange: (filters: Filters) => void;
+  biggestLand: number;
+  biggestNetworth: number;
 };
 
-export default function FilterBar({ onFilterChange }: FilterBarProps) {
+export default function FilterBar({ onFilterChange, biggestLand, biggestNetworth }: FilterBarProps) {
   const [filters, setFilters] = useState<Filters>({
-    land: [500, 232920], // Start at multiples of 10
-    networth: [60000, 60000000],
+    land: [500, roundToNearest100(biggestLand)], // Start at multiples of 10
+    networth: [50000, roundToNearest50000(biggestNetworth)],
     provinces: [1, 25],
   });
 
@@ -70,26 +82,28 @@ export default function FilterBar({ onFilterChange }: FilterBarProps) {
         Land Range:
         <div className={styles.rangeContainer}>
           <div className={styles.sliderWrapper}>
+            (Min)
             <input
               type="range"
               min="400"
-              max="240000"
+              max={roundToNearest100(biggestLand)}
               value={filters.land[0]}
               onChange={(e) =>
                 handleChange("land", [Number(e.target.value), filters.land[1]])
               }
-              step="10"
+              step="100"
               className={styles.rangeInput}
             />
+            (Max)
             <input
               type="range"
               min="400"
-              max="240000"
+              max={roundToNearest100(biggestLand)}
               value={filters.land[1]}
               onChange={(e) =>
                 handleChange("land", [filters.land[0], Number(e.target.value)])
               }
-              step="10"
+              step="100"
               className={styles.rangeInput}
             />
           <div className={styles.rangeLabels}>
@@ -105,10 +119,11 @@ export default function FilterBar({ onFilterChange }: FilterBarProps) {
         Networth Range:
         <div className={styles.rangeContainer}>
           <div className={styles.sliderWrapper}>
+          (Min)
             <input
               type="range"
-              min="60000"
-              max="60000000"
+              min="50000"
+              max={roundToNearest50000(biggestNetworth)}
               value={filters.networth[0]}
               onChange={(e) =>
                 handleChange("networth", [
@@ -119,10 +134,11 @@ export default function FilterBar({ onFilterChange }: FilterBarProps) {
               step="50000"
               className={styles.rangeInput}
             />
+            (Max)
             <input
               type="range"
-              min="60000"
-              max="60000000"
+              min="50000"
+              max={roundToNearest50000(biggestNetworth)}
               value={filters.networth[1]}
               onChange={(e) =>
                 handleChange("networth", [
@@ -146,6 +162,7 @@ export default function FilterBar({ onFilterChange }: FilterBarProps) {
         Province Count:
         <div className={styles.rangeContainer}>
         <div className={styles.sliderWrapper}>
+        (Min)
           <input
             type="range"
             min="1"
@@ -160,6 +177,7 @@ export default function FilterBar({ onFilterChange }: FilterBarProps) {
             step="1"
             className={styles.rangeInput}
           />
+          (Max)
           <input
             type="range"
             min="1"
