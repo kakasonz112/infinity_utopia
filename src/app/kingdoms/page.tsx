@@ -1,8 +1,8 @@
 "use client"
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import styles from "./page.module.css";
 import FilterBar from "../../components/FilterBar/FilterBar";
-import React from "react";
+import LocalDisplay from "../../components/LocalDisplay/LocalDisplay";
 
 type Province = {
   slot: number;
@@ -43,8 +43,8 @@ type Filters = {
 
 export default function Kingdoms() {
   const [data, setData] = useState<KingdomsData | null>(null);
-  const [biggestNetworth, setNetworth] = useState<Number | null>(0);
-  const [biggestLand, setLand] = useState<Number | null>(0);
+  const [biggestNetworth, setNetworth] = useState<number>(0);
+  const [biggestLand, setLand] = useState<number>(0);
   const [filteredKingdoms, setFilteredKingdoms] = useState<Kingdom[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState<Filters>({
@@ -180,13 +180,19 @@ export default function Kingdoms() {
 
       <div className={styles.info}>
         <p>
-          <span>Start Date:</span> {data?.startDate}
+          <span>Start Date:</span> 
+          <LocalDisplay utcTimeString={data?.startDate ?? ""} />
+          
         </p>
         <p>
-          <span>End Date:</span> {data?.endDate}
+          <span>End Date:</span>
+          <LocalDisplay utcTimeString={data?.endDate ?? ""} />
+
         </p>
         <p>
-          <span>Last Updated:</span> {data?.lastUpdated}
+          <span>Last Updated:</span> 
+          <LocalDisplay utcTimeString={data?.lastUpdated ?? ""} />
+
         </p>
       </div>
 
