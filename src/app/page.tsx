@@ -20,6 +20,10 @@ export default function Home() {
       <Link href="/kingdoms" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
           View Kingdoms
       </Link>
+      <br></br><br></br>
+      <Link href="/provinces" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          View Provinces Activity
+      </Link>
 
     </div>
   );
