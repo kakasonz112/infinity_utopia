@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "firebase": "^11.6.1",
     "moment-timezone": "^0.5.47",
     "next": "15.2.2",
     "react": "^19.0.0",
