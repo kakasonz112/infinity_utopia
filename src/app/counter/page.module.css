@@ -1,19 +1,20 @@
 .container {
   max-width: 700px;
-  width: 90%; /* responsive width */
+  width: 90%;
   margin: 20px auto;
   padding: 20px;
   background: #ffffff;
   border-radius: 14px;
   color: #000000;
   box-sizing: border-box;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .title {
   font-size: 24px;
   font-weight: bold;
   margin-bottom: 16px;
-  color: #000000;
+  color: #111;
   text-align: center;
 }
 
@@ -25,39 +26,56 @@
   resize: vertical;
   background: #f9f9f9;
   font-size: 14px;
-  color: #000000;
+  color: #000;
   box-sizing: border-box;
 }
 
+.buttonGroup {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
 .button {
-  margin-top: 12px;
   padding: 10px 16px;
   border-radius: 10px;
   background: #111;
-  color: #ffffff;
+  color: #fff;
   cursor: pointer;
   border: none;
   font-size: 14px;
-  width: 100%; /* full-width on mobile */
+  flex: 1;
+  min-width: 120px;
+  transition: background 0.2s ease;
+  text-align: center;
 }
 
 .button:hover {
   background: #333;
 }
 
+.button:disabled {
+  background: #999;
+  cursor: not-allowed;
+}
+
 .results {
-  margin-top: 20px;
+  margin-top: 24px;
   padding: 16px;
   background: #f3f3f3;
   border-radius: 10px;
-  color: #000000;
+  color: #000;
   box-sizing: border-box;
 }
 
 .resultLine {
-  padding: 4px 0;
+  padding: 6px 0;
   border-bottom: 1px solid #ddd;
-  word-break: break-word; /* wrap long text */
+  word-break: break-word;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
 }
 
 .resultLine:last-child {
@@ -67,22 +85,25 @@
 .prov {
   color: #ff4500;
   font-weight: bold;
+  margin-right: 8px;
+  min-width: 40px;
 }
 
 .gbp {
-  color: red;
+  color: #cc0000;
   font-weight: bold;
-  margin-left: 6px;
+  margin-left: auto;
 }
 
 .kingdomTitle {
   font-weight: bold;
-  margin-top: 16px;
-  margin-bottom: 8px;
+  margin-top: 20px;
+  margin-bottom: 10px;
   color: #444;
+  border-bottom: 2px solid #ccc;
+  padding-bottom: 5px;
 }
 
-/* Responsive styles */
 @media (max-width: 480px) {
   .container {
     padding: 16px;
@@ -97,16 +118,24 @@
     padding: 10px;
   }
 
+  .buttonGroup {
+    flex-direction: column;
+  }
+
   .button {
-    font-size: 13px;
-    padding: 10px;
+    width: 100%;
+    min-width: auto;
+    flex: none;
   }
 
   .resultLine {
     font-size: 13px;
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .kingdomTitle {
-    font-size: 16px;
+  .gbp {
+    margin-left: 0;
+    margin-top: 4px;
   }
 }
