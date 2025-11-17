@@ -24,6 +24,10 @@ export default function Home() {
       <Link href="/provinces" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
           View Provinces Activity
       </Link>
+      <br></br><br></br>
+      <Link href="/counter" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          Target Counter
+      </Link>
 
     </div>
   );
