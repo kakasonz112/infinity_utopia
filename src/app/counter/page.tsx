@@ -137,7 +137,7 @@ export default function Page() {
                 <div key={i} className={styles.resultLine}>
                 <span className={styles.prov}>#{hit.prov}</span>
                 <span className={styles.name}>{hit.text.replace(/^\d+ - /, '')} ({hit.kingdom})</span>
-                <span className={styles.count}><b>{hit.count}</b> times {hit.count > 2 && <span className={styles.gbp}>GBP</span>}</span>
+                <span className={styles.count}><b>{hit.count}</b> times {hit.count >= 2 && <span className={styles.gbp}>GBP</span>}</span>
                 </div>
         ))}
         </div>
