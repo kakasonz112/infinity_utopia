@@ -15,6 +15,7 @@ export default function Page() {
   const [groupedHits, setGroupedHits] = useState<Record<string, Hit[]>>({});
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+  const [copiedKingdom, setCopiedKingdom] = useState<string | null>(null);
 
   const parse = () => {
     const lines = input.split("\n").filter(Boolean);
@@ -84,7 +85,7 @@ export default function Page() {
 
     const text = hits.map(
       (hit) =>
-        `#${hit.prov} - ${hit.text.replace(/^\d+ - /, '')} - ${hit.count} times${hit.count > 2 ? ' GBP' : ''}`
+        `#${hit.prov} - ${hit.text.replace(/^\d+ - /, '')} - ${hit.count} times${hit.count >= 2 ? ' GBP' : ''}`
     ).join("\n");
 
     navigator.clipboard.writeText(text)
@@ -120,17 +121,22 @@ export default function Page() {
         <div key={kingdom} className={styles.results}>
         <div className={styles.kingdomHeader}>
                 <h3 className={styles.kingdomTitle}>Kingdom {kingdom}</h3>
-                <button
-                className={styles.copyButton}
-                onClick={() => {
-                const text = hits
-                .map(hit => `#${hit.prov} - ${hit.text.replace(/^\d+ - /, '')} - ${hit.count} times${hit.count > 2 ? ' GBP' : ''}`)
-                .join('\n');
-                navigator.clipboard.writeText(text);
-                }}
-                >
-                COPY
-                </button>
+                  <button
+                    className={`${styles.copyButton} ${copiedKingdom === kingdom ? styles.copied : ""}`}
+                    onClick={() => {
+                      const text = hits
+                        .map(hit => `#${hit.prov} - ${hit.text.replace(/^\d+ - /, '')} - ${hit.count} times${hit.count >= 2 ? ' GBP' : ''}`)
+                        .join('\n');
+
+                      navigator.clipboard.writeText(text).then(() => {
+                        setCopiedKingdom(kingdom);
+                        setTimeout(() => setCopiedKingdom(null), 1500);
+                      });
+                    }}
+                  >
+                    {copiedKingdom === kingdom ? "COPIED" : "COPY"}
+                  </button>
+
         </div>
 
         {hits.map((hit, i) => (
