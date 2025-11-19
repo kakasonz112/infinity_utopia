@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+    --color-bg-primary: #0f0f0f;
+    --color-bg-secondary: #1a1a1a;
+    --color-border: #333;
+    --color-text: #ffffff;
+    --color-text-faded: #ccc;
+    --color-accent-bg: #4a4a4a;
+    --color-accent-hover: #5c5c5c;
+    --color-attacker: rgba(255, 0, 0, 0.15); /* Reddish */
+    --color-tm: rgba(0, 128, 255, 0.15);     /* Bluish */
 }
 
 @theme inline {
