@@ -140,6 +140,7 @@ export default function KingdomTargetMatcher() {
   const [results, setResults] = useState<any[]>([]);
   const [unassignedEnemy, setUnassignedEnemy] = useState<any[]>([]);
   const [unassignedOwn, setUnassignedOwn] = useState<any[]>([]);
+  const [copied, setCopied] = useState(false);
 
   const computeMatches = () => {
     const own = parseKingdom(ownInput);
@@ -195,7 +196,33 @@ COPY FORMAT from ENEMY KINGDOM PAGE:
 
       {results.length > 0 && (
         <div className={styles.tableContainer}>
-          <h2 className={styles.title}>Assigned Targets</h2>
+<div className={styles.titleRow}>
+  <h2 className={styles.title}>Assigned Targets</h2>
+
+  <div className={styles.actionBox}>
+    <button
+      className={styles.copyButton}
+      onClick={() => {
+        const text = results
+          .map(
+            (r) =>
+              `#${r.own.slot} ${r.own.name}  →  #${r.enemy.slot} ${r.enemy.name}   (${r.ratio.toFixed(1)}%)`
+          )
+          .join("\n");
+
+        navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1200);
+      }}
+    >
+      Copy
+    </button>
+
+    {copied && <span className={styles.copiedText}>Copied!</span>}
+  </div>
+</div>
+
+
           <table className={styles.table}>
             <thead>
               <tr>

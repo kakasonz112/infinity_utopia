@@ -58,11 +58,28 @@
   transform: translateY(-2px);
 }
 
-/* Assignments Table */
+/* Copy button */
+.copyButton {
+  margin-top: 1rem;
+  background: #444;
+  padding: 0.6rem 1.4rem;
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  border: 1px solid #555;
+  font-size: 0.9rem;
+  transition: background 0.25s ease;
+}
+
+.copyButton:hover {
+  background: #555;
+}
+
+/* Table */
 .tableContainer {
   margin-top: 1.5rem;
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto; /* Makes table scrollable on mobile */
   border: 1px solid #333;
 }
 
@@ -70,6 +87,7 @@
   width: 100%;
   border-collapse: collapse;
   background: #1a1a1d;
+  min-width: 700px; /* Prevents squishing on mobile */
 }
 
 .table thead {
@@ -98,4 +116,68 @@
 
 .table tr:hover {
   background: #2a2a30;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 10px;
+}
+
+.copyButton {
+  background: #444;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  border: 1px solid #555;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.25s ease;
+}
+
+.copyButton:hover {
+  background: #555;
+}
+
+.copiedText {
+  margin-left: 10px;
+  color: #3bff6b;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.actionBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+
+/* =============================
+   RESPONSIVE DESIGN
+============================= */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr; /* single column */
+  }
+
+  .textarea {
+    height: 250px; /* smaller on mobile */
+    font-size: 0.85rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .button {
+    width: 100%;
+    font-size: 1rem;
+  }
+
+  .copyButton {
+    width: 100%;
+  }
 }
