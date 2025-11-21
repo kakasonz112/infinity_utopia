@@ -1,7 +1,7 @@
 /* page.module.css */
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 2rem;
     font-family: Arial, sans-serif;
@@ -48,6 +48,15 @@
     color: #333;
     border-bottom: 2px solid #ddd;
   }
+
+  .kingdomsTable th:last-child,
+  .kingdomsTable td:last-child {
+    text-align: center;
+    font-weight: bold;
+    color: #007bff; /* Make status blue for visibility */
+    min-width: 170px; /* Or adjust as needed for long status texts */
+  }
+
   
   .kingdomsTable td {
     padding: 1rem;

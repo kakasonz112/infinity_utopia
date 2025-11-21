@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { useEffect, useState, useCallback } from "react";
 import styles from "./page.module.css";
 import FilterBar from "../../components/FilterBar/FilterBar";
@@ -41,6 +41,8 @@ type Filters = {
   provinces: number[];
 };
 
+const CEASEFIRE_HOURS = 96;
+
 export default function Kingdoms() {
   const [data, setData] = useState<KingdomsData | null>(null);
   const [biggestNetworth, setNetworth] = useState<number>(0);
@@ -55,10 +57,11 @@ export default function Kingdoms() {
   const [debouncedFilters, setDebouncedFilters] = useState<Filters>(filters);
   const [isLoading, setIsLoading] = useState(true);
 
-  const formatNumber = (num: number) => {
-    return new Intl.NumberFormat().format(num);
-  };
-  
+  // ---- Ceasefire tracking state ----
+  const [ceasefire, setCeasefire] = useState<{ [key: string]: { warsConcluded: number; timestamp: number } }>({});
+
+  const formatNumber = (num: number) => new Intl.NumberFormat().format(num);
+
   // Sorting state
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: "ASC" | "DESC" }>({
     key: "kingdomName",
@@ -74,7 +77,7 @@ export default function Kingdoms() {
     };
   };
 
-  // Fetch data (same as before)
+  // Fetch kingdoms data (unchanged)
   useEffect(() => {
     async function fetchData() {
       try {
@@ -92,14 +95,45 @@ export default function Kingdoms() {
         setIsLoading(false);
       }
     }
-
     fetchData();
   }, []);
 
-  // Filter kingdoms (same as before)
+  // ---- Fetch ceasefire state ----
+  useEffect(() => {
+    fetch("/api/ceasefire")
+      .then(res => res.ok ? res.json() : {})
+      .then(setCeasefire);
+  }, []);
+
+  // ---- Update ceasefire state on warsConcluded changes ----
+  useEffect(() => {
+    if (!data || !data.kingdoms) return;
+    const updates: { [key: string]: { warsConcluded: number; timestamp: number } } = {};
+    data.kingdoms.forEach((k: Kingdom) => {
+      const key = `${k.kingdomNumber}-${k.kingdomIsland}`;
+      const prev = ceasefire[key];
+      if (!prev || k.warsConcluded > prev.warsConcluded) {
+        updates[key] = { warsConcluded: k.warsConcluded, timestamp: Date.now() };
+      }
+    });
+    // PATCH only if there are new updates
+    if (Object.keys(updates).length) {
+      fetch("/api/ceasefire", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updates),
+      }).then(() =>
+        fetch("/api/ceasefire")
+          .then(res => res.json())
+          .then(setCeasefire)
+      );
+    }
+    // eslint-disable-next-line
+  }, [data]);
+
+  // Filter kingdoms (unchanged)
   const filterKingdoms = useCallback(() => {
     if (!data) return;
-
     const filtered = data.kingdoms.filter((kingdom) => {
       return (
         kingdom.totalLand >= debouncedFilters.land[0] &&
@@ -110,7 +144,6 @@ export default function Kingdoms() {
         kingdom.provinceCount <= debouncedFilters.provinces[1]
       );
     });
-
     setFilteredKingdoms(filtered);
     setExpandedRows(new Set()); // Clear expanded rows
   }, [data, debouncedFilters]);
@@ -132,24 +165,22 @@ export default function Kingdoms() {
     return distribution;
   };
 
-  // Sorting function
+  // Sorting function (unchanged)
   const sortKingdoms = (key: string) => {
     const direction = sortConfig.direction === "ASC" ? "DESC" : "ASC";
     setSortConfig({ key, direction });
-  
+
     const sortedKingdoms = [...filteredKingdoms].sort((a, b) => {
-      const aValue = a[key as keyof Kingdom] ?? ''; // Default to 0 if undefined
-      const bValue = b[key as keyof Kingdom] ?? ''; // Default to 0 if undefined
-  
+      const aValue = a[key as keyof Kingdom] ?? '';
+      const bValue = b[key as keyof Kingdom] ?? '';
       if (aValue < bValue) return direction === "ASC" ? -1 : 1;
       if (aValue > bValue) return direction === "ASC" ? 1 : -1;
       return 0;
     });
-  
     setFilteredKingdoms(sortedKingdoms);
   };
 
-  // Determine the sorting icon
+  // Sorting icon (unchanged)
   const getSortIcon = (key: string) => {
     if (sortConfig.key === key) {
       return sortConfig.direction === "ASC" ? "▲" : "▼";
@@ -157,7 +188,7 @@ export default function Kingdoms() {
     return "";
   };
 
-  // Toggle row expansion
+  // Toggle row expansion (unchanged)
   const toggleRow = (key: string) => {
     setExpandedRows((prev) => {
       const newExpandedRows = new Set(prev);
@@ -170,6 +201,18 @@ export default function Kingdoms() {
     });
   };
 
+  // ---- Status column logic ----
+  function getWarCeasefireStatus(kingdom: Kingdom) {
+    const key = `${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`;
+    const rec = ceasefire[key];
+    if (!rec) return "NONE";
+    if (rec.timestamp === 0 || rec.warsConcluded === 0) return "NONE";
+    const elapsed = (Date.now() - rec.timestamp) / (1000 * 3600);
+    if (elapsed > CEASEFIRE_HOURS) return "NONE";
+    return `War CeaseFire (${(CEASEFIRE_HOURS - elapsed).toFixed(1)} hours left)`;
+  }
+
+
   if (isLoading) {
     return <div className={styles.loading}>Loading Kingdoms...</div>;
   }
@@ -177,91 +220,57 @@ export default function Kingdoms() {
   return (
     <div className={styles.container}>
       <h1 className={styles.heading}>Kingdom Data</h1>
-
       <div className={styles.info}>
         <p>
-          <span>Start Date:</span> 
+          <span>Start Date:</span>
           <LocalDisplay utcTimeString={data?.startDate ?? ""} />
-          
         </p>
         <p>
           <span>End Date:</span>
           <LocalDisplay utcTimeString={data?.endDate ?? ""} />
-
         </p>
         <p>
-          <span>Last Updated:</span> 
+          <span>Last Updated:</span>
           <LocalDisplay utcTimeString={data?.lastUpdated ?? ""} />
-
         </p>
       </div>
-
       <FilterBar onFilterChange={handleFilterChange} biggestLand={biggestLand} biggestNetworth={biggestNetworth} />
-
       <table className={styles.kingdomsTable}>
         <thead>
           <tr>
             <th></th>
-            <th
-              onClick={() => sortKingdoms("kingdomName")}
-              style={{ cursor: "pointer" }}
-            >
+            <th onClick={() => sortKingdoms("kingdomName")} style={{ cursor: "pointer" }}>
               Kingdom {getSortIcon("kingdomName")}
             </th>
-            <th
-              onClick={() => sortKingdoms("kingdomNumber")}
-              style={{ cursor: "pointer" }}
-            >
+            <th onClick={() => sortKingdoms("kingdomNumber")} style={{ cursor: "pointer" }}>
               Kingdom Number {getSortIcon("kingdomNumber")}
             </th>
-            <th
-              onClick={() => sortKingdoms("kingdomIsland")}
-              style={{ cursor: "pointer" }}
-            >
+            <th onClick={() => sortKingdoms("kingdomIsland")} style={{ cursor: "pointer" }}>
               Kingdom Island {getSortIcon("kingdomIsland")}
             </th>
-            <th
-              onClick={() => sortKingdoms("honor")}
-              style={{ cursor: "pointer" }}
-            >
+            <th onClick={() => sortKingdoms("honor")} style={{ cursor: "pointer" }}>
               Honor {getSortIcon("honor")}
             </th>
-            <th
-              onClick={() => sortKingdoms("networth")}
-              style={{ cursor: "pointer" }}
-            >
+            <th onClick={() => sortKingdoms("networth")} style={{ cursor: "pointer" }}>
               Networth {getSortIcon("networth")}
             </th>
-            <th
-              onClick={() => sortKingdoms("totalLand")}
-              style={{ cursor: "pointer" }}
-            >
+            <th onClick={() => sortKingdoms("totalLand")} style={{ cursor: "pointer" }}>
               Total Land {getSortIcon("totalLand")}
             </th>
-            <th
-              onClick={() => sortKingdoms("provinceCount")}
-              style={{ cursor: "pointer" }}
-            >
+            <th onClick={() => sortKingdoms("provinceCount")} style={{ cursor: "pointer" }}>
               Province Count {getSortIcon("provinceCount")}
             </th>
-            <th
-              onClick={() => sortKingdoms("warsConcluded")}
-              style={{ cursor: "pointer" }}
-            >
+            <th onClick={() => sortKingdoms("warsConcluded")} style={{ cursor: "pointer" }}>
               Wars Concluded {getSortIcon("warsConcluded")}
             </th>
-            <th
-              onClick={() => sortKingdoms("warsWon")}
-              style={{ cursor: "pointer" }}
-            >
+            <th onClick={() => sortKingdoms("warsWon")} style={{ cursor: "pointer" }}>
               Wars Won {getSortIcon("warsWon")}
             </th>
-            <th
-              onClick={() => sortKingdoms("warScore")}
-              style={{ cursor: "pointer" }}
-            >
+            <th onClick={() => sortKingdoms("warScore")} style={{ cursor: "pointer" }}>
               War Score {getSortIcon("warScore")}
             </th>
+            {/* ---- Add the Status column here ---- */}
+            <th>Status</th>
           </tr>
         </thead>
         <tbody>
@@ -271,9 +280,7 @@ export default function Kingdoms() {
                 <td>
                   <button
                     className={styles.expandButton}
-                    onClick={() =>
-                      toggleRow(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`)
-                    }
+                    onClick={() => toggleRow(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`)}
                   >
                     {expandedRows.has(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`) ? "-" : "+"}
                   </button>
@@ -288,10 +295,12 @@ export default function Kingdoms() {
                 <td>{formatNumber(kingdom.warsConcluded)}</td>
                 <td>{formatNumber(kingdom.warsWon)}</td>
                 <td>{formatNumber(kingdom.warScore)}</td>
+                {/* ---- Render the Status cell here ---- */}
+                <td>{getWarCeasefireStatus(kingdom)}</td>
               </tr>
               {expandedRows.has(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`) && (
                 <tr className={styles.expandedRow}>
-                  <td colSpan={10}>
+                  <td colSpan={12}>
                     <table className={styles.provinceTable}>
                       <thead>
                         <tr>
