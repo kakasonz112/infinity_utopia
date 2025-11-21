@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-// For server-side secrets (DO NOT expose these in _public_ settings)
+// For server-side secrets
 const supabase = createClient(
   process.env.SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -9,25 +9,26 @@ const supabase = createClient(
 
 type CeasefireState = {
   [key: string]: {
-    warsConcluded: number;
+    warsConcluded: number;  
     timestamp: number;
+    isCeasefire: boolean;
   };
 };
 
 export async function GET() {
   const { data, error } = await supabase
-    .from('ceasefire')
-    .select('*');
+    .from("ceasefire")
+    .select("*");
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  // Convert DB rows to expected shape
   let state: CeasefireState = {};
   (data as any[] || []).forEach(row => {
     state[row.id as string] = {
       warsConcluded: row.wars_concluded as number,
-      timestamp: Number(row.timestamp)
+      timestamp: Number(row.timestamp),
+      isCeasefire: !!row.is_ceasefire,
     };
   });
   return NextResponse.json(state);
@@ -38,20 +39,20 @@ export async function PATCH(req: Request) {
 
   const upserts = Object.entries(updates).map(([key, value]) =>
     supabase
-      .from('ceasefire')
+      .from("ceasefire")
       .upsert(
         {
           id: key,
           wars_concluded: value.warsConcluded,
           timestamp: value.timestamp,
+          is_ceasefire: value.isCeasefire,
         },
-        { onConflict: 'id' }
+        { onConflict: "id" }
       )
   );
 
   const results = await Promise.all(upserts);
 
-  // Safer null check
   const hasError = results.some(r => r && r.error);
   const messages = results
     .filter(r => r && r.error)
@@ -63,4 +64,3 @@ export async function PATCH(req: Request) {
   }
   return NextResponse.json({ success: true });
 }
-

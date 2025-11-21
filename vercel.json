@@ -1,6 +1,6 @@
 {
   "crons": [{
     "path": "/api/cron-ceasefire",
-    "schedule": "*/1 * * * *"
+    "schedule": "*/10 * * * *"
   }]
 }

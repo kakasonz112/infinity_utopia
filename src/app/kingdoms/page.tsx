@@ -41,6 +41,12 @@ type Filters = {
   provinces: number[];
 };
 
+type CeasefireRecord = {
+  warsConcluded: number;
+  timestamp: number;
+  isCeasefire: boolean;
+};
+
 const CEASEFIRE_HOURS = 96;
 
 export default function Kingdoms() {
@@ -58,7 +64,7 @@ export default function Kingdoms() {
   const [isLoading, setIsLoading] = useState(true);
 
   // ---- Ceasefire tracking state ----
-  const [ceasefire, setCeasefire] = useState<{ [key: string]: { warsConcluded: number; timestamp: number } }>({});
+  const [ceasefire, setCeasefire] = useState<{ [key: string]: CeasefireRecord }>({});
 
   const formatNumber = (num: number) => new Intl.NumberFormat().format(num);
 
@@ -106,30 +112,8 @@ export default function Kingdoms() {
   }, []);
 
   // ---- Update ceasefire state on warsConcluded changes ----
-  useEffect(() => {
-    if (!data || !data.kingdoms) return;
-    const updates: { [key: string]: { warsConcluded: number; timestamp: number } } = {};
-    data.kingdoms.forEach((k: Kingdom) => {
-      const key = `${k.kingdomNumber}-${k.kingdomIsland}`;
-      const prev = ceasefire[key];
-      if (!prev || k.warsConcluded > prev.warsConcluded) {
-        updates[key] = { warsConcluded: k.warsConcluded, timestamp: Date.now() };
-      }
-    });
-    // PATCH only if there are new updates
-    if (Object.keys(updates).length) {
-      fetch("/api/ceasefire", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-      }).then(() =>
-        fetch("/api/ceasefire")
-          .then(res => res.json())
-          .then(setCeasefire)
-      );
-    }
-    // eslint-disable-next-line
-  }, [data]);
+  // This PATCH logic is obsolete! Server-side cron now only updates when war count increases!
+  // Leave client as read-only, do not trigger ceasefire tracking here.
 
   // Filter kingdoms (unchanged)
   const filterKingdoms = useCallback(() => {
@@ -205,13 +189,11 @@ export default function Kingdoms() {
   function getWarCeasefireStatus(kingdom: Kingdom) {
     const key = `${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`;
     const rec = ceasefire[key];
-    if (!rec) return "NONE";
-    if (rec.timestamp === 0 || rec.warsConcluded === 0) return "NONE";
+    if (!rec || !rec.isCeasefire) return "NONE";
     const elapsed = (Date.now() - rec.timestamp) / (1000 * 3600);
     if (elapsed > CEASEFIRE_HOURS) return "NONE";
     return `War CeaseFire (${(CEASEFIRE_HOURS - elapsed).toFixed(1)} hours left)`;
   }
-
 
   if (isLoading) {
     return <div className={styles.loading}>Loading Kingdoms...</div>;
