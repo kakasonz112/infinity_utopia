@@ -1,16 +1,3 @@
-:root {
-  /* Theme (replace with actual theme vars if you have them) */
-  --color-bg-primary: #181922;
-  --color-bg-secondary: #222334;
-  --color-attacker: #25293a;
-  --color-tm: #222c22;
-  --color-border: #303448;
-  --color-text: #f4f4fa;
-  --color-text-faded: #b4b7c5;
-  --color-accent-bg: #4886ff;
-  --color-accent-hover: #3461b7;
-}
-
 /* --- 1. THEME VARIABLES & BASE LAYOUT --- */
 
 .container {
