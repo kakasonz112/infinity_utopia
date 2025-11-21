@@ -1,5 +1,6 @@
 {
-  "cron": {
-    "cron-ceasefire": "*/1 * * * *"
-  }
+  "crons": [{
+    "path": "/api/cron-ceasefire",
+    "schedule": "*/1 * * * * "
+  }]
 }
