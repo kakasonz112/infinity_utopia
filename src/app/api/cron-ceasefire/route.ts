@@ -77,30 +77,43 @@ export async function GET() {
     }
   }
 
-  // 4. Upsert to Supabase
+  // 4. Upsert to Supabase (REPLACEMENT)
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ success: true, updated: 0 });
+  }
+
   const upserts = Object.entries(updates).map(([key, value]) =>
     supabase
       .from("ceasefire")
       .upsert(
         {
           id: key,
-          wars_concluded: value.warsConcluded,
+          wars_concluded: value.warsConcluded,  // <- Note: was value.warsConcluded
           timestamp: value.timestamp,
           is_ceasefire: value.isCeasefire,
         },
         { onConflict: "id" }
       )
   );
-  const results = await Promise.all(upserts);
 
-  const hasError = results.some(r => r && r.error);
-  if (hasError) {
-    const messages = results
-      .filter(r => r && r.error)
-      .map(r => r!.error!.message)
-      .join("; ");
-    return NextResponse.json({ error: `Upsert errors: ${messages}` }, { status: 500 });
+  const results = await Promise.allSettled(upserts);
+
+  console.log("allSettled results:", results);
+
+  const failed = results.filter(
+    (result): result is PromiseRejectedResult => result.status === 'rejected'
+  );
+
+  if (failed.length > 0) {
+    const messages = failed.map(r => String(r.reason)).join("; ");
+    console.error("Upsert failures:", failed);
+    return NextResponse.json({ 
+      error: `Upsert errors: ${messages}` 
+    }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, updated: Object.keys(updates).length });
+  return NextResponse.json({ 
+    success: true, 
+    updated: Object.keys(updates).length 
+  });
 }
