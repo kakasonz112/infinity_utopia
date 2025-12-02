@@ -142,3 +142,61 @@
   background: #3bb54a !important;
   color: white !important;
 }
+
+/* --- Unhit Provinces Section --- */
+.unhitContainer {
+  margin-top: 16px;
+  padding: 12px 10px;
+  border-radius: 10px;
+  background: #fff7e6;          /* soft highlight */
+  border: 1px solid #ffd27f;
+}
+
+.unhitHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.unhitTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #b36b00;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ffe6b8;
+}
+
+.unhitCount {
+  font-size: 12px;
+  color: #666;
+}
+
+/* Lines inside unhit block */
+.unhitLine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px dashed #f0c671;
+}
+
+.unhitLine:last-child {
+  border-bottom: none;
+}
+
+.unhitProv {
+  color: #ff8c00;
+  font-weight: bold;
+  min-width: 40px;
+}
+
+.unhitName {
+  flex: 1;
+  font-size: 13px;
+  color: #333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
