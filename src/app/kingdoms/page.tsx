@@ -62,16 +62,23 @@ const CEASEFIRE_HOURS = 96;
  * Helper to convert a total number of ticks (days) since game start 
  * into the Utopia calendar format (Month Day). Ticks are 1-based.
  */
+const getUtopiaDatePartsFromTicks = (totalTicks: number) => {
+  const zeroBased = totalTicks - 1;            // 0-based day index
+
+  const year = Math.floor(zeroBased / DAYS_PER_CYCLE);   // 0,1,2,...
+  const dayInYear = zeroBased % DAYS_PER_CYCLE;          // 0..167
+
+  const monthIndex = Math.floor(dayInYear / DAYS_PER_MONTH); // 0..6
+  const day = (dayInYear % DAYS_PER_MONTH) + 1;              // 1..24
+
+  const month = UT_MONTHS[monthIndex];
+
+  return { month, day, year };   // year is computed, not offset
+};
+
 const getUtopiaDateFromTicks = (totalTicks: number): string => {
-    // We adjust by -1 for the 0-based indexing used by the modulus operator, then +1 at the end.
-    const cycleDayIndex = (totalTicks - 1) % DAYS_PER_CYCLE; 
-    
-    const monthIndex = Math.floor(cycleDayIndex / DAYS_PER_MONTH);
-    const day = (cycleDayIndex % DAYS_PER_MONTH) + 1;
-    
-    const month = UT_MONTHS[monthIndex];
-    
-    return `${month} ${day}`;
+  const { month, day, year } = getUtopiaDatePartsFromTicks(totalTicks);
+  return `${month} ${day} YR ${year}`;
 };
 // --- End Utopia Calendar Helper ---
 
@@ -233,32 +240,67 @@ export default function Kingdoms() {
         });
     };
 
-    // ---- Status column logic (UPDATED) ----
-function getWarCeasefireStatus(kingdom: Kingdom) {
-    const key = `${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`;
-    const rec = ceasefire[key];
-    
-    if (!rec || !rec.isCeasefire || !data?.startDate) return "NONE";
+    // ---- Status column logic (aligned with 96 ticks ≈ 344000000 ms) ----
+    const MS_PER_TICK = 1000 * 60 * 60;        // 1 hour = 1 in-game day / tick
+    const CEASEFIRE_TICKS = 96;                // 96 ticks
+    const CEASEFIRE_MS = CEASEFIRE_TICKS * MS_PER_TICK;         // your 96-tick duration in ms (close to 96h)
 
-    const now = Date.now();
-    const MS_PER_HOUR = 1000 * 3600;
+    function getWarCeasefireStatus(kingdom: Kingdom) {
+        const key = `${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`;
+        const rec = ceasefire[key];
 
-    // 1. Calculate Real-World Time Remaining (Displayed as Ticks Remaining)
-    const elapsedHours = (now - rec.timestamp) / MS_PER_HOUR;
-    const remainingHours = CEASEFIRE_HOURS - elapsedHours;
+        if (!rec || !rec.isCeasefire || !data?.startDate) return "NONE";
 
-    if (remainingHours <= 0) return "NONE";
-    
-    // 2. The remaining hours are the remaining ticks.
-    const remainingTicks = remainingHours;
-    
-    // 3. Forcing the end date to Jan 5, as the mathematical calculation 
-    // (which yielded June 10) does not match the required game server output.
-    const dateToDisplay = "Jan 5"; 
+        const nowMs = Date.now();
+        const gameStartUtc = new Date(data.startDate + "Z"); // interpret as UTC
+        const gameStartMs = gameStartUtc.getTime()        
+        const cfStartMs = rec.timestamp;                         // ms from Date.now()
 
-    // The requested display format: War CF End: Jan 5 (91.6 ticks left)
-    return `War CF End: ${dateToDisplay} (${remainingTicks.toFixed(1)} ticks left)`;
-}
+        // DEBUG: log base info
+        console.log("=== CF DEBUG ===");
+        console.log("Kingdom key:", key);
+        console.log("gameStartMs:", gameStartMs, "->", new Date(gameStartMs).toISOString());
+        console.log("cfStartMs:", cfStartMs, "->", new Date(cfStartMs).toISOString());
+        console.log("nowMs:", nowMs, "->", new Date(nowMs).toISOString());
+
+        // 1) Remaining ticks / hours for display
+        const elapsedMs = nowMs - cfStartMs;
+        const elapsedTicks = elapsedMs / MS_PER_TICK;            // 1 tick = 1 hour
+        const remainingTicks = CEASEFIRE_TICKS - elapsedTicks;
+
+        console.log("elapsedMs:", elapsedMs);
+        console.log("elapsedTicks:", elapsedTicks);
+        console.log("remainingTicks:", remainingTicks);
+
+        if (remainingTicks <= 0) {
+            console.log("CF expired -> NONE");
+            return "NONE";
+        }
+
+        // 2) CF END time in real ms (using your 96-tick ≈ 344000000 ms value)
+        const cfEndMs = cfStartMs + CEASEFIRE_MS;
+        console.log("cfEndMs:", cfEndMs, "->", new Date(cfEndMs).toISOString());
+
+        // 3) CF END tick index since game start (1-based)
+        const diffMs = cfEndMs - gameStartMs;
+        const rawTicks = diffMs / MS_PER_TICK; // 0-based
+        const cfEndTick = Math.round(rawTicks) + 2;
+
+        console.log("diffMs (cfEnd - gameStart):", diffMs);
+        console.log("rawTicks (0-based):", rawTicks);
+        console.log("cfEndTick (1-based):", cfEndTick);
+
+        // 4) Convert that tick to Utopia calendar date
+        const utopiaEndDate = getUtopiaDateFromTicks(cfEndTick);
+        console.log("utopiaEndDate:", utopiaEndDate);
+        console.log("=== END CF DEBUG ===");
+
+        return `War CF End: ${utopiaEndDate} (${remainingTicks.toFixed(1)} ticks left)`;
+    }
+
+
+
+
     if (isLoading) {
         return <div className={styles.loading}>Loading Kingdoms...</div>;
     }
