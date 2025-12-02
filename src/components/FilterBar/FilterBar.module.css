@@ -4,10 +4,10 @@
 .filterBar {
     margin: 20px auto;
     padding: 20px;
-    border: 1px solid #ddd;
+    border: 1px solid #444; /* dark-border-light */
     border-radius: 8px;
-    background-color: #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    background-color: #2d2d2d; /* dark-container-bg */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); /* Darker shadow */
     width: 90%;
     max-width: 1200px;
     transition: box-shadow 0.3s ease;
@@ -19,6 +19,7 @@
     flex-direction: column; /* Stack elements vertically */
     width: 100%;
     margin-bottom: 1rem;
+    gap: 5px;
   }
   
   /* Wrapper for Slider and Labels */
@@ -27,13 +28,14 @@
     align-items: center; /* Vertically center the slider and labels */
     width: 100%;
     position: relative; /* Important for absolute positioning of labels */
+    gap: 10px;
   }
   
   /* Range Slider */
   .rangeInput {
     width: 40%;       /* Controls the slider's width */
     margin: 0.5rem 0;
-    background-color: #f0f0f0;
+    background-color: #3c3c3c; /* dark-table-header-bg */
     border-radius: 5px;
     height: 12px;
     -webkit-appearance: none;
@@ -43,7 +45,7 @@
   
   /* Range Slider Hover Effect */
   .rangeInput:hover {
-    background-color: #d1d1d1;
+    background-color: #444;
   }
   
   /* Styling for Range Slider Thumb */
@@ -53,7 +55,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background-color: #007bff;
+    background-color: #4a90e2;
     cursor: pointer;
   }
   
@@ -61,7 +63,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background-color: #007bff;
+    background-color: #4a90e2;
     cursor: pointer;
   }
   
@@ -70,7 +72,7 @@
     display: flex;
     justify-content: space-between;
     font-size: 14px;
-    color: #555;
+    color: #b0b0b0;
     margin-top: 5px;
     width: 40%; /* Same width as the slider */
     position: absolute; /* Take out of the normal flow */
@@ -91,7 +93,7 @@
   /* Label Styling */
   .label {
     font-size: 1rem;
-    color: #000;
+    color: #f0f0f0;
     font-weight: bold;
     margin-bottom: 0.5rem;
     display: block;
@@ -118,7 +120,7 @@
   
     .rangeLabels {
       font-size: 12px;
-        position: relative; /*on smaller screen make position relative*/
+      position: relative; /*on smaller screen make position relative*/
   
     }
     .rangeLabels span:first-child, .rangeLabels span:last-child {
