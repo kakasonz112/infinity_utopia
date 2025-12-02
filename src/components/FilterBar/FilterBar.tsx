@@ -4,12 +4,12 @@ import { useState, useCallback, useEffect } from "react";
 import styles from "./FilterBar.module.css"; // Import the CSS Module
 
 function roundToNearest50000(num: number): number {
-  const rounded = Math.round(num / 50000) * 50000;
+  const rounded = Math.ceil(num / 50000) * 50000;
   return rounded;
 }
 
 function roundToNearest100(num: number): number {
-  const rounded = Math.round(num / 100) * 100;
+  const rounded = Math.ceil(num / 100) * 100;
   return rounded;
 }
 
@@ -36,18 +36,26 @@ type Filters = {
   provinces: number[];
 };
 
+// NEW TYPE: Ceasefire filter type
+export type CfFilterType = "ALL" | "CF_ONLY";
+
 type FilterBarProps = {
   onFilterChange: (filters: Filters) => void;
+  onCfFilterChange: (cfFilter: CfFilterType) => void;
   biggestLand: number;
   biggestNetworth: number;
 };
 
-export default function FilterBar({ onFilterChange, biggestLand, biggestNetworth }: FilterBarProps) {
-  const [filters, setFilters] = useState<Filters>({
+export default function FilterBar({ onFilterChange, onCfFilterChange, biggestLand, biggestNetworth }: FilterBarProps) {  const [filters, setFilters] = useState<Filters>({
     land: [500, roundToNearest100(biggestLand)], // Start at multiples of 10
     networth: [50000, roundToNearest50000(biggestNetworth)],
     provinces: [1, 25],
   });
+
+  console.log("bggestland:", biggestLand);
+ console.log(" roundToNearest100 bggestland:", roundToNearest100(biggestLand));
+  // NEW STATE: Ceasefire filter state
+  const [cfFilter, setCfFilter] = useState<CfFilterType>("ALL");
 
   // Use debounce for filters
   const debouncedFilters = useDebounce(filters, 500);
@@ -68,6 +76,11 @@ export default function FilterBar({ onFilterChange, biggestLand, biggestNetworth
     onFilterChange(debouncedFilters);
   }, [debouncedFilters, onFilterChange]);
 
+  // Trigger the onCfFilterChange when cfFilter changes
+  useEffect(() => {
+    onCfFilterChange(cfFilter);
+  }, [cfFilter, onCfFilterChange]);
+  
     // Format large numbers - Option 1: More decimal places for K and M
     const formatNumber = (num: number) => {
         if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(3)}M`; // 3 decimal places
@@ -77,6 +90,32 @@ export default function FilterBar({ onFilterChange, biggestLand, biggestNetworth
 
   return (
     <div className={styles.filterBar}>
+    {/* 🛑 NEW: Ceasefire Filter Radio Buttons 🛑 */}
+      <div className={styles.label} style={{ marginBottom: '15px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
+          <span style={{ fontWeight: 'bold', marginRight: '15px' }}>Ceasefire Filter:</span>
+          <label style={{ marginRight: '15px' }}>
+              <input 
+                  type="radio" 
+                  name="cfFilter" 
+                  value="ALL" 
+                  checked={cfFilter === "ALL"} 
+                  onChange={() => setCfFilter("ALL")} 
+                  style={{ marginRight: '5px' }}
+              />
+              All Kingdoms
+          </label>
+          <label>
+              <input 
+                  type="radio" 
+                  name="cfFilter" 
+                  value="CF_ONLY" 
+                  checked={cfFilter === "CF_ONLY"} 
+                  onChange={() => setCfFilter("CF_ONLY")} 
+                  style={{ marginRight: '5px' }}
+              />
+              Ceasefire Only
+          </label>
+      </div>
       {/* Land Range */}
       <label className={styles.label}>
         Land Range:

@@ -3,7 +3,7 @@
 
 import React, { useEffect, useState, useCallback } from "react";
 import styles from "./page.module.css";
-import FilterBar from "../../components/FilterBar/FilterBar";
+import FilterBar, { CfFilterType } from "../../components/FilterBar/FilterBar";
 import LocalDisplay from "../../components/LocalDisplay/LocalDisplay";
 
 type Province = {
@@ -92,6 +92,8 @@ export default function Kingdoms() {
 
     // ---- Ceasefire tracking state ----
     const [ceasefire, setCeasefire] = useState<{ [key: string]: CeasefireRecord }>({});
+    const [cfFilter, setCfFilter] = useState<CfFilterType>("ALL");
+
 
     const formatNumber = (num: number) => new Intl.NumberFormat().format(num);
 
@@ -141,8 +143,10 @@ export default function Kingdoms() {
     // Filter kingdoms (unchanged)
     const filterKingdoms = useCallback(() => {
         if (!data) return;
+        
         const filtered = data.kingdoms.filter((kingdom) => {
-            return (
+            // Check existing numeric filters
+            const passesNumericFilters = (
                 kingdom.totalLand >= debouncedFilters.land[0] &&
                 kingdom.totalLand <= debouncedFilters.land[1] &&
                 kingdom.networth >= debouncedFilters.networth[0] &&
@@ -150,19 +154,42 @@ export default function Kingdoms() {
                 kingdom.provinceCount >= debouncedFilters.provinces[0] &&
                 kingdom.provinceCount <= debouncedFilters.provinces[1]
             );
+
+            if (!passesNumericFilters) return false;
+
+            // 🛑 NEW FILTER LOGIC 🛑
+            if (cfFilter === "CF_ONLY") {
+                const key = `${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`;
+                const rec = ceasefire[key];
+                
+                // Only show if a ceasefire record exists AND it is currently active (remaining hours > 0)
+                if (!rec || !rec.isCeasefire) return false;
+                
+                const elapsedHours = (Date.now() - rec.timestamp) / (1000 * 3600);
+                const remainingHours = CEASEFIRE_HOURS - elapsedHours;
+                
+                return remainingHours > 0;
+            }
+
+            return true;
         });
+
         setFilteredKingdoms(filtered);
-        setExpandedRows(new Set()); // Clear expanded rows
-    }, [data, debouncedFilters]);
+        setExpandedRows(new Set()); 
+    }, [data, debouncedFilters, cfFilter, ceasefire]);
 
     useEffect(() => {
         filterKingdoms();
-    }, [debouncedFilters, data, filterKingdoms]);
+    }, [debouncedFilters, data, filterKingdoms, cfFilter]);
 
     const handleFilterChange = (newFilters: Filters) => {
         setFilters(newFilters);
         debounce(() => setDebouncedFilters(newFilters), 300)();
     };
+   
+    const handleCfFilterChange = (newCfFilter: CfFilterType) => {
+        setCfFilter(newCfFilter);
+    }
 
     const calculateKingdomRaceDistribution = (provinces: Province[]) => {
         const distribution: { [race: string]: number } = {};
@@ -253,7 +280,12 @@ function getWarCeasefireStatus(kingdom: Kingdom) {
                     <LocalDisplay utcTimeString={data?.lastUpdated ?? ""} />
                 </p>
             </div>
-            <FilterBar onFilterChange={handleFilterChange} biggestLand={biggestLand} biggestNetworth={biggestNetworth} />
+            <FilterBar 
+                onFilterChange={handleFilterChange} 
+                onCfFilterChange={handleCfFilterChange}
+                biggestLand={biggestLand} 
+                biggestNetworth={biggestNetworth} 
+            />            
             <table className={styles.kingdomsTable}>
                 <thead>
                     <tr>
