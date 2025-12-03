@@ -302,8 +302,14 @@ export default function Kingdoms() {
 
 
     if (isLoading) {
-        return <div className={styles.loading}>Loading Kingdoms...</div>;
+    return (
+        <div className={styles.loadingWrapper}>
+        <div className={styles.spinner} />
+        <div className={styles.loadingText}>Loading Kingdoms...</div>
+        </div>
+    );
     }
+
 
     return (
         <div className={styles.container}>
@@ -409,12 +415,11 @@ export default function Kingdoms() {
                                             <tbody>
                                                 {kingdom.provinces.map((province) => (
                                                     <tr key={province.slot}>
-                                                        <td>{province.slot}</td>
+                                                        <td>#{province.slot}</td>
                                                         <td>{province.name}</td>
                                                         <td>{formatNumber(province.land)}</td>
                                                         <td>{province.race}</td>
                                                         <td>{province.honorName}</td>
-                                                        <td>{formatNumber(province.networth)}</td>
                                                         <td>{formatNumber(province.networth)}</td>
                                                         <td>{province.protected ? "Yes" : "No"}</td>
                                                     </tr>
