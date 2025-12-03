@@ -132,7 +132,7 @@ export default function Page() {
     const hitLines = hits.map(
       (hit) =>
         `#${hit.prov} - ${hit.text.replace(/^\d+ - /, "")} - ${hit.count} times${
-          hit.count >= 2 ? " GBP" : ""
+          hit.count > 2 ? " GBP" : ""
         }`
     );
 
