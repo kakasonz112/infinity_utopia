@@ -10,7 +10,7 @@ export default function Home() {
         Infinity Kingdom Viewer
       </p>
        <Image
-          src="/infinity.jpg"  //put your logo here.
+          src="/infinity.png"  //put your logo here.
           alt="Infinity logo"
           width={680}
           height={108}

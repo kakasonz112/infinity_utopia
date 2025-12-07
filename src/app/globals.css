@@ -30,9 +30,64 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  /* Add top padding so fixed controls (like a global back button) don't overlap content */
 }
 
   /* Add smooth scroll behavior for mobile */
   html {
     scroll-behavior: smooth;
   }
+
+/* Reduce top padding on small screens */
+@media (max-width: 640px) {
+  body {
+  }
+}
+
+/* Site header: left/back, centered logo, right spacer */
+.siteHeader {
+  display: grid;
+  grid-template-columns: 160px 1fr 160px;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  background: transparent;
+}
+
+.siteHeaderLeft {
+  justify-self: start;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.siteHeaderCenter {
+  justify-self: center;
+}
+
+.siteHeaderRight {
+  justify-self: end;
+}
+
+.siteHeader img {
+  display: block;
+  height: 36px;
+  width: auto;
+}
+
+.siteHeaderLogo {
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .siteHeader {
+    grid-template-columns: 110px 1fr 110px;
+    padding: 0.35rem 0.5rem;
+  }
+}
+
+/* When BackButton is used inside header, remove its extra offset */
+.siteHeaderLeft .backBtn {
+  margin: 0;
+}

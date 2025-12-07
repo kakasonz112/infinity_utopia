@@ -1,0 +1,31 @@
+.backBtn {
+  left: 16px;
+  top: 16px;
+  z-index: 1000;
+  background-color: rgba(45,45,45,0.95);
+  color: #f0f0f0;
+  border: 1px solid rgba(74,144,226,0.18);
+  padding: 0.45rem 0.6rem;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.5);
+}
+
+.backBtn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px rgba(0,0,0,0.6);
+}
+
+.backBtn:active {
+  transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+  .backBtn {
+    left: 12px;
+    top: 12px;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.9rem;
+  }
+}
