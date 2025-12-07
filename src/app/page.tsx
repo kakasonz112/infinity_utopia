@@ -36,6 +36,10 @@ export default function Home() {
       <Link href="/parser" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
           War Target Assign
       </Link>
+      <br></br><br></br>
+      <Link href="/CFPlanner" className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+          CF PLANNER
+      </Link>
     </div>
   );
 }
