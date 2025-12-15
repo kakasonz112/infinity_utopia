@@ -23,7 +23,7 @@ type ParsedAttack = {
   books?: number;
   kills?: number;
   category?: string; // high-level event category (Traditional March, Plunder, Raze...)
-  isOutgoing: boolean; // from our kd (3:12) POV
+  isOutgoing: boolean; // from inferred our kd POV
 };
 
 type SummaryTotalsSide = {
@@ -51,7 +51,40 @@ type SummaryResult = {
   };
 };
 
-const OUR_KD = "3:12";
+// Mutable so the user can override via UI inputs before processing
+let OUR_KD = "3:12";
+let ENEMY_KD = "6:7";
+
+// Hours used for unique counting window (shared single definition)
+const UNIQUE_WINDOW_HOURS = 5;
+
+// Categories that count toward made/suffered tallies
+const COUNT_CATEGORIES = new Set([
+  'Traditional March',
+  'Ambush',
+  'Conquest',
+  'Raze',
+  'Massacre',
+  'Plunder',
+  'Learn',
+  'Failed Attack',
+]);
+
+// Convert a date string like "May 8 of YR3" to a monotonic tick for sorting
+function parseTickFromLine(line: string): number | null {
+  const m = line.match(/^([A-Za-z]+)\s+(\d+)\s+of\s+YR(\d+)/i);
+  if (!m) return null;
+  const monthName = m[1].toLowerCase();
+  const day = parseInt(m[2], 10);
+  const year = parseInt(m[3], 10);
+  const UT_SHORTS = ["jan", "feb", "mar", "apr", "may", "jun", "jul"];
+  const monthIndex = UT_SHORTS.indexOf(monthName.slice(0, 3));
+  if (monthIndex === -1) return null;
+  const DAYS_PER_MONTH = 24;
+  const DAYS_PER_CYCLE = UT_SHORTS.length * DAYS_PER_MONTH;
+  const zeroBased = year * DAYS_PER_CYCLE + monthIndex * DAYS_PER_MONTH + (day - 1);
+  return zeroBased + 1; // 1-based
+}
 
 function normalizeProvKey(raw: string | undefined) {
   if (!raw) return null;
@@ -60,6 +93,27 @@ function normalizeProvKey(raw: string | undefined) {
   if (m) return `${m[1]} - ${m[2].trim()}`;
   if (/an unknown province/i.test(s)) return "An unknown Province";
   return s;
+}
+
+// Compute uniques for a kingdom based on attacker provinces using a window (hours)
+// Ambush does not consume a unique per spec.
+function computeUniquesByAttacker(attacks: ParsedAttack[], kd: string, windowHours: number) {
+  const lastByAttacker: Record<string, number> = {};
+  const countByAttacker: Record<string, number> = {};
+  for (const a of attacks) {
+    if (a.attackerKd !== kd) continue;
+    if (a.category === "Ambush") continue;
+    const tick = (a as any)._tick || 0;
+    const key = (normalizeProvKey(a.attackerProv) || a.attackerProv || "An unknown Province").toString();
+    const last = lastByAttacker[key];
+    if (last === undefined || (tick - last) >= windowHours) {
+      countByAttacker[key] = (countByAttacker[key] || 0) + 1;
+      lastByAttacker[key] = tick;
+    }
+  }
+  const total = Object.values(countByAttacker).reduce((s, v) => s + v, 0);
+  const entries = Object.entries(countByAttacker).sort((a, b) => b[1] - a[1]);
+  return { total, entries };
 }
 
 function detailedSummaryUI(attacks: ParsedAttack[], lines: string[]) {
@@ -74,37 +128,25 @@ function detailedSummaryUI(attacks: ParsedAttack[], lines: string[]) {
     const raw = (a.raw || "");
     if (raw.includes(`(${OUR_KD})`) && a.attackerKd !== OUR_KD) {
       const attackerPattern = /\(\s*3:12\s*\)\s*(?:captured|invaded|attacked|attempted|set|sent)/i;
-      const defenderPattern = /(?:captured|invaded|attacked|razed|recaptured|ambush|killed|looted|pillag)[\s\S]*\(\s*3:12\s*\)/i;
+      const defenderPattern = /(?:captured|invaded|attacked|attempted|razed|recaptured|ambush|killed|looted|pillag)[\s\S]*\(\s*3:12\s*\)/i;
       if (defenderPattern.test(raw)) return true;
-      if (!attackerPattern.test(raw) && /invaded|attacked|captured|razed|recaptured|ambush|killed|looted|pillag/i.test(raw)) return true;
+      if (!attackerPattern.test(raw) && /invaded|attacked|attempted|captured|razed|recaptured|ambush|killed|looted|pillag/i.test(raw)) return true;
     }
     return false;
   });
 
-  // compute uniques using 10-hour window grouping per province (sequential tick)
-  const WINDOW = 10;
-  let uniqMadeCount = 0;
-  const lastTickMade: Record<string, number> = {};
-  for (const a of attacks) {
-    if (a.attackerKd === OUR_KD) {
-      const key = (a.attackerProv || "") + "|" + (a.attackerKd || "");
-      const lastT = lastTickMade[key];
-      if (!lastT || ((a as any)._tick - lastT) >= WINDOW) {
-        uniqMadeCount++;
-        lastTickMade[key] = (a as any)._tick;
-      }
-    }
-  }
-
-  let uniqSufCount = 0;
+  const { total: uniqMadeCount } = computeUniquesByAttacker(attacks, OUR_KD, UNIQUE_WINDOW_HOURS);
+  // For suffered, count uniques by incoming attacker provinces (any kd) hitting us, excluding ambush
   const lastTickSuf: Record<string, number> = {};
+  let uniqSufCount = 0;
   for (const a of attacks) {
-    if (a.defenderKd === OUR_KD) {
-      const key = (a.attackerProv || "") + "|" + (a.attackerKd || "");
+    if (a.defenderKd === OUR_KD && a.category !== "Ambush") {
+      const key = (normalizeProvKey(a.attackerProv) || a.attackerProv || "An unknown Province").toString();
       const lastT = lastTickSuf[key];
-      if (!lastT || ((a as any)._tick - lastT) >= WINDOW) {
+      const tick = (a as any)._tick || 0;
+      if (lastT === undefined || (tick - lastT) >= UNIQUE_WINDOW_HOURS) {
         uniqSufCount++;
-        lastTickSuf[key] = (a as any)._tick;
+        lastTickSuf[key] = tick;
       }
     }
   }
@@ -147,17 +189,16 @@ function detailedSummaryUI(attacks: ParsedAttack[], lines: string[]) {
       if (!provMap[k]) provMap[k] = { acres: 0, made: 0, suffered: 0 };
       const addAcres = (a.category === 'Raze') ? 0 : (a.acres || 0);
       if (addAcres) provMap[k].acres += addAcres;
-      if (attackCats.has(a.category || '') || (a.raw && attackLikeRegex.test(a.raw))) provMap[k].made += 1;
+      provMap[k].made += 1;
     }
     if (a.defenderKd === OUR_KD && a.defenderProv) {
       const raw = normalizeProvKey(a.defenderProv) || a.defenderProv;
       const k = raw as string;
       if (!provMap[k]) provMap[k] = { acres: 0, made: 0, suffered: 0 };
-      // Raze is destruction only: do not subtract defender land for razes
       if (a.category === 'Raze') {
         // no acres change
       } else if (a.acres) provMap[k].acres -= a.acres;
-      if (attackCats.has(a.category || '') || (a.raw && attackLikeRegex.test(a.raw))) provMap[k].suffered += 1;
+      provMap[k].suffered += 1;
     }
   }
 
@@ -188,8 +229,8 @@ function detailedSummaryUI(attacks: ParsedAttack[], lines: string[]) {
   displayProvEntries.sort((a, b) => (b.acres || 0) - (a.acres || 0));
 
   const netTotal = displayProvEntries.reduce((s, e) => s + e.acres, 0);
-  const madeCount = made.length;
-  const sufferedCount = suffered.length;
+  const madeCount = made.filter((a) => COUNT_CATEGORIES.has(a.category || '')).length;
+  const sufferedCount = suffered.filter((a) => COUNT_CATEGORIES.has(a.category || '')).length;
 
   const out: string[] = [];
   out.push('Kingdom News Report');
@@ -235,8 +276,7 @@ function detailedSummaryUI(attacks: ParsedAttack[], lines: string[]) {
     }
   }
 
-  // Enemy breakdown for 6:7 (match CLI)
-  const ENEMY_KD = '6:7';
+  // Enemy breakdown for chosen enemy kd
   const enemyMap: Record<string, { acres: number; made: number; suffered: number }> = {};
   for (const a of attacks) {
     if (a.attackerKd === ENEMY_KD && a.attackerProv) {
@@ -311,9 +351,9 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
     const raw = (a.raw || "");
     if (raw.includes(`(${focalKd})`) && a.attackerKd !== focalKd) {
       const attackerPattern = /\(\s*3:12\s*\)\s*(?:captured|invaded|attacked|attempted|set|sent)/i;
-      const defenderPattern = /(?:captured|invaded|attacked|razed|recaptured|ambush|killed|looted|pillag)[\s\S]*\(\s*3:12\s*\)/i;
+      const defenderPattern = /(?:captured|invaded|attacked|attempted|razed|recaptured|ambush|killed|looted|pillag)[\s\S]*\(\s*3:12\s*\)/i;
       if (defenderPattern.test(raw)) return true;
-      if (!attackerPattern.test(raw) && /invaded|attacked|captured|razed|recaptured|ambush|killed|looted|pillag/i.test(raw)) return true;
+      if (!attackerPattern.test(raw) && /invaded|attacked|attempted|captured|razed|recaptured|ambush|killed|looted|pillag/i.test(raw)) return true;
     }
     return false;
   });
@@ -352,47 +392,106 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
     const overallAcres = (cats['Traditional March'].acres || 0) + (cats['Ambush'].acres || 0) + (cats['Conquest'].acres || 0);
     const overallCount = Object.values(cats).reduce((s: number, v: any) => s + (v.count || 0), 0);
     const overallKills = Object.values(cats).reduce((s: number, v: any) => s + (v.kills || 0), 0);
-    const uniques = new Set(list.map((a) => (a.attackerKd === focalKd ? a.defenderProv : a.attackerProv)).filter(Boolean)).size;
-    return { totals: cats, overallCount, overallAcres, overallKills, uniques };
+    // uniques overridden below using windowed attacker-based counting
+    return { totals: cats, overallCount, overallAcres, overallKills, uniques: 0 };
   }
 
   const madeStats = totalsFor(made);
   const sufStats = totalsFor(suffered);
   // will override uniques below with WINDOW-based per-province uniques
 
-  // WINDOW uniques
-  const WINDOW = 10;
-  // Build WINDOW-based unique counts per province so breakdown and summary align.
-  const uniqMadeProvCount: Record<string, number> = {};
-  const lastTickMadeByProv: Record<string, number> = {};
-  const uniqSufProvCount: Record<string, number> = {};
-  const lastTickSufByProv: Record<string, number> = {};
+  // WINDOW uniques by attacker province (ambush excluded)
+  const { total: uniqMadeCount, entries: uniqMadeEntries } = computeUniquesByAttacker(attacks, focalKd, UNIQUE_WINDOW_HOURS);
+  // Suffered uniques: attackers (any kd) hitting focalKd, ambush excluded
+  const sufLastByAttacker: Record<string, number> = {};
+  const sufCountByAttacker: Record<string, number> = {};
   for (const a of attacks) {
-    const tick = (a as any)._tick || 0;
-    if (a.attackerKd === focalKd && a.defenderProv) {
-      const provKey = (normalizeProvKey(a.defenderProv) || a.defenderProv || '').toString();
-      const last = lastTickMadeByProv[provKey];
-      if (!last || (tick - last) >= WINDOW) {
-        uniqMadeProvCount[provKey] = (uniqMadeProvCount[provKey] || 0) + 1;
-        lastTickMadeByProv[provKey] = tick;
-      }
-    }
-    if (a.defenderKd === focalKd && a.attackerProv) {
-      const provKey = (normalizeProvKey(a.attackerProv) || a.attackerProv || '').toString();
-      const last = lastTickSufByProv[provKey];
-      if (!last || (tick - last) >= WINDOW) {
-        uniqSufProvCount[provKey] = (uniqSufProvCount[provKey] || 0) + 1;
-        lastTickSufByProv[provKey] = tick;
+    if (a.defenderKd === focalKd && a.category !== "Ambush") {
+      const tick = (a as any)._tick || 0;
+      const key = (normalizeProvKey(a.attackerProv) || a.attackerProv || 'An unknown Province').toString();
+      const last = sufLastByAttacker[key];
+      if (last === undefined || (tick - last) >= UNIQUE_WINDOW_HOURS) {
+        sufCountByAttacker[key] = (sufCountByAttacker[key] || 0) + 1;
+        sufLastByAttacker[key] = tick;
       }
     }
   }
+  const uniqSufCount = Object.values(sufCountByAttacker).reduce((s, v) => s + v, 0);
 
-  const uniqMadeCount = Object.values(uniqMadeProvCount).reduce((s, v) => s + v, 0);
-  const uniqSufCount = Object.values(uniqSufProvCount).reduce((s, v) => s + v, 0);
-
-  // Override the totals' uniques so summary numbers are derived from the breakdown
+  // surface uniques into summary stats so summary lines match breakdowns
   (madeStats as any).uniques = uniqMadeCount;
   (sufStats as any).uniques = uniqSufCount;
+
+  // Derive non-attack counters (dragons, rituals, bounces summary)
+  const eventStats = (() => {
+    let dragonStartUs = 0;
+    let dragonStartEnemy = 0;
+    let dragonCompletedUs = 0;
+    let dragonCompletedEnemy = 0;
+    let enemyDragonsKilled = 0;
+    let ritualsStartedUs = 0;
+    let ritualsStartedEnemy = 0;
+    let ritualsCompletedUs = 0;
+    let ritualsCompletedEnemy = 0;
+
+    for (const rawLine of lines) {
+      const lower = rawLine.toLowerCase();
+      const dragonProjectStart = /dragon project/.test(lower) && /(has begun|begun)/.test(lower);
+      if (dragonProjectStart && /our kingdom/.test(lower)) dragonStartUs += 1;
+      else if (dragonProjectStart && !/our kingdom/.test(lower)) dragonStartEnemy += 1;
+
+      // Our dragon took flight toward the enemy
+      if (
+        /our dragon/.test(lower) &&
+        /(sets flight|has set flight|has set .*flight|has completed our dragon)/.test(lower)
+      ) {
+        dragonCompletedUs += 1;
+      }
+
+      if (/slain the dragon|has slain.*dragon/.test(lower)) {
+        enemyDragonsKilled += 1; // we killed an incoming dragon
+        dragonCompletedEnemy += 1;
+      }
+
+      if (/ritual/.test(lower)) {
+        if (/covering our lands/.test(lower)) {
+          ritualsStartedEnemy += 1;
+          ritualsCompletedEnemy += 1; // treat covering as enemy ritual active/completed for summary
+        } else if (/started developing a ritual|begun developing a ritual/.test(lower)) {
+          ritualsStartedUs += 1;
+          ritualsCompletedUs += 1; // user wants it reflected as completed once started
+        }
+      }
+    }
+
+    const bouncesMade = attacks.filter((a) => a.category === "Failed Attack" && a.attackerKd === focalKd).length;
+    const bouncesSuf = attacks.filter((a) => {
+      if (a.category === "Failed Attack" && a.defenderKd === focalKd) return true;
+      // fallback: if defender not parsed but raw shows our kd and an attempted/repelled phrase
+      if (
+        a.category === "Failed Attack" &&
+        a.attackerKd !== focalKd &&
+        !a.defenderKd &&
+        /attempted|repelled/i.test(a.raw) &&
+        a.raw.includes(`(${focalKd})`)
+      ) return true;
+      return false;
+    }).length;
+
+    return {
+      bouncesMade,
+      bouncesSuf,
+      dragonStartUs,
+      dragonStartEnemy,
+      dragonCompletedUs,
+      dragonCompletedEnemy,
+      enemyDragonsKilled,
+      ritualsStartedUs,
+      ritualsStartedEnemy,
+      ritualsCompletedUs,
+      ritualsCompletedEnemy,
+    };
+  })();
 
   function provinceNetFor(kd: string) {
     const map: Record<string, { acres: number; made: number; suffered: number }> = {};
@@ -406,7 +505,7 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
         if (!map[k]) map[k] = { acres: 0, made: 0, suffered: 0 };
         const addAcres = (a.category === 'Raze') ? 0 : (a.acres || 0);
         if (addAcres) map[k].acres += addAcres;
-        if (attackCats.has(a.category || '') || (a.raw && attackLikeRegex.test(a.raw))) map[k].made += 1;
+        map[k].made += 1;
       }
       // when kd is defender, aggregate under the defender province
       if (a.defenderKd === kd && a.defenderProv) {
@@ -416,7 +515,7 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
         if (a.category === 'Raze') {
           // do not modify acres for raze
         } else if (a.acres) map[k].acres -= a.acres;
-        if (attackCats.has(a.category || '') || (a.raw && attackLikeRegex.test(a.raw))) map[k].suffered += 1;
+        map[k].suffered += 1;
       }
     }
 
@@ -465,8 +564,7 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
   }
   const others = Object.keys(kdCounts).filter((k) => k !== focalKd);
   others.sort((a, b) => kdCounts[b] - kdCounts[a]);
-  const topOther = others[0] ?? null;
-  const otherProv = topOther ? provinceNetFor(topOther) : [];
+  const otherKds = others;
 
   // Highlights and other rich UI sections
   let largestGain = { prov: "", acres: 0 };
@@ -501,7 +599,7 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
   let hoursText = "N/A";
   if (dfTick != null && dtTick != null) {
     const tickDiff = Math.abs(dtTick - dfTick);
-    hoursText = `${tickDiff} hours`;
+    hoursText = `${tickDiff+1} hours`;
   }
 
   const header = `** Kingdom news report **\nFor the time from ${timeWindowFrom} till ${timeWindowTo} - ${hoursText}`;
@@ -519,14 +617,24 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
   const failRateMade = madeStats.overallCount ? ((madeStats.totals["Failed Attack"].count / madeStats.overallCount) * 100).toFixed(1) : "0.0";
   bodyLines.push(`-- Failed: ${madeStats.totals["Failed Attack"].count} (${failRateMade}% failure)`);
   bodyLines.push(`-- Uniques: ${madeStats.uniques}`);
-  bodyLines.push(`Total attacks suffered: ${sufStats.overallCount} (${sufStats.overallAcres} acres)`);
+  bodyLines.push(`-- Bounces: ${eventStats.bouncesMade}`);
+  bodyLines.push(`-- DragonsStarted: ${eventStats.dragonStartUs}`);
+  bodyLines.push(`-- DragonsCompleted: ${eventStats.dragonCompletedUs}`);
+  bodyLines.push(`-- Enemy Dragons Killed: ${eventStats.enemyDragonsKilled}`);
+  bodyLines.push(`-- Rituals Started: ${eventStats.ritualsStartedUs}`);
+  bodyLines.push(`-- Rituals Completed: ${eventStats.ritualsCompletedUs}`);
+  bodyLines.push(`\nTotal attacks suffered: ${sufStats.overallCount} (${sufStats.overallAcres} acres)`);
   bodyLines.push(`-- Traditional march: ${sufStats.totals["Traditional March"].count} (${sufStats.totals["Traditional March"].acres} acres)`);
   bodyLines.push(`-- Ambush: ${sufStats.totals["Ambush"].count} (${sufStats.totals["Ambush"].acres} acres)`);
   bodyLines.push(`-- Raze: ${sufStats.totals["Raze"].count} (${sufStats.totals["Raze"].acres} acres)`);
   bodyLines.push(`-- Massacre: ${sufStats.totals["Massacre"].count} (${sufStats.totals["Massacre"].kills} population)`);
   const failRateSuf = sufStats.overallCount ? ((sufStats.totals["Failed Attack"].count / sufStats.overallCount) * 100).toFixed(1) : "0.0";
   bodyLines.push(`-- Failed: ${sufStats.totals["Failed Attack"].count} (${failRateSuf}% failure)`);
-  bodyLines.push(`-- Uniques: ${sufStats.uniques}\n`);
+  bodyLines.push(`-- Uniques: ${sufStats.uniques}`);
+  bodyLines.push(`-- Bounces: ${eventStats.bouncesSuf}`);
+  bodyLines.push(`-- Dragons Started: ${eventStats.dragonStartEnemy}`);
+  bodyLines.push(`-- Dragons Completed: ${eventStats.dragonCompletedEnemy}`);
+  bodyLines.push(`\n`);
 
   function formatKingdomSection(kd: string, entries: { prov: string; acres: number; times: number; made?: number; suffered?: number }[]) {
     const display = entries.filter((e) => {
@@ -537,9 +645,10 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
       return true;
     });
     const net = display.reduce((acc, e) => acc + e.acres, 0);
-    const totalTrades = display.reduce((acc, e) => acc + e.times, 0);
+    const totalMade = attacks.filter((a) => a.attackerKd === kd && COUNT_CATEGORIES.has(a.category || '')).length;
+    const totalSuffered = attacks.filter((a) => a.defenderKd === kd && COUNT_CATEGORIES.has(a.category || '')).length;
     const header = `** The kingdom of ${kd} **`;
-    const lines = [header, `Total Acres: ${net >= 0 ? `+${net}` : net} (${totalTrades})`];
+    const lines = [header, `Total Acres: ${net >= 0 ? `+${net}` : net} (${totalMade}/${totalSuffered})`];
     for (const e of display) {
       const provStr = (e.prov || "").toString();
       const m = provStr.match(/^\s*(\d+)\s*-\s*(.*)$/);
@@ -561,17 +670,50 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
 
   bodyLines.push(...formatKingdomSection(focalKd, focalProv));
   bodyLines.push("");
-  if (topOther) bodyLines.push(...formatKingdomSection(topOther, otherProv));
+  for (const kd of otherKds) {
+    bodyLines.push(...formatKingdomSection(kd, provinceNetFor(kd)));
+    bodyLines.push("");
+  }
+
+  // 5-hour unique breakdown per kingdom (attacker provinces only, ambush excluded)
+  const computeUniquesEntriesForKd = (kd: string) => {
+    const lastByProv: Record<string, number> = {};
+    const countByProv: Record<string, number> = {};
+    for (const a of attacks) {
+      if (a.attackerKd !== kd) continue;
+      if (a.category === "Ambush") continue;
+      const tick = (a as any)._tick || 0;
+      const key = (normalizeProvKey(a.attackerProv) || a.attackerProv || 'An unknown Province').toString();
+      const last = lastByProv[key];
+      if (last === undefined || (tick - last) >= UNIQUE_WINDOW_HOURS) {
+        countByProv[key] = (countByProv[key] || 0) + 1;
+        lastByProv[key] = tick;
+      }
+    }
+    return Object.entries(countByProv).sort((a, b) => b[1] - a[1]);
+  };
+
+  const uniquesForUs = computeUniquesEntriesForKd(focalKd);
+  const uniquesForUsTotal = uniquesForUs.reduce((s, [, v]) => s + v, 0);
+  (madeStats as any).uniques = uniquesForUsTotal;
 
   bodyLines.push("");
   bodyLines.push("** Uniques for " + focalKd + " **");
-  // Use WINDOW-based per-province uniques computed earlier so summary and breakdown align
-  const uniqueTotals: Record<string, number> = {};
-  for (const [k, v] of Object.entries(uniqMadeProvCount || {})) uniqueTotals[k] = (uniqueTotals[k] || 0) + v;
-  for (const [k, v] of Object.entries(uniqSufProvCount || {})) uniqueTotals[k] = (uniqueTotals[k] || 0) + v;
-  const uniqueEntries = Object.entries(uniqueTotals).sort((a, b) => b[1] - a[1]);
-  for (const [prov, cnt] of uniqueEntries.slice(0, 20)) {
+  for (const [prov, cnt] of uniquesForUs) {
     bodyLines.push(`${prov} - ${cnt}`);
+  }
+
+  const enemyKd = otherKds[0] || ENEMY_KD;
+  const uniquesForEnemy = computeUniquesEntriesForKd(enemyKd);
+  const uniquesForEnemyTotal = uniquesForEnemy.reduce((s, [, v]) => s + v, 0);
+  (sufStats as any).uniques = uniquesForEnemyTotal;
+
+  if (uniquesForEnemy.length > 0) {
+    bodyLines.push("");
+    bodyLines.push("** Uniques for " + enemyKd + " **");
+    for (const [prov, cnt] of uniquesForEnemy) {
+      bodyLines.push(`${prov} - ${cnt}`);
+    }
   }
 
   bodyLines.push("");
@@ -766,6 +908,7 @@ function parseLineToAttack(line: string): ParsedAttack | null {
   const isCaptured = /captured/i.test(content);
   const isRazed = /razed/i.test(content);
   const isKilled = /killed/i.test(content);
+  const isAmbush = /\bambush|\bambushed/i.test(content);
   const isAttempted = /attempted to invade|attempted an invasion|attempted to invade/i.test(content);
   const isRecaptured = /recaptured/i.test(content);
   const isPillaged = /pillag|pillaged/i.test(content);
@@ -778,25 +921,19 @@ function parseLineToAttack(line: string): ParsedAttack | null {
   const isDefect = /defected/i.test(content);
   const isCollapse = /collapsed|lies in ruins|has collapsed/i.test(content);
 
-  if (
-    !isInvaded &&
-    !isAttacked &&
-    !isLooted &&
-    !isCaptured &&
-    !isRazed &&
-    !isKilled &&
-    !isAttempted &&
-    !isRecaptured &&
-    !isPillaged &&
-    !isDragon &&
-    !isWar &&
-    !isCeasefire &&
-    !isAid &&
-    !isDefect &&
-    !isCollapse
-  ) {
-    return null;
-  }
+  const hasCombat =
+    isInvaded ||
+    isAttacked ||
+    isLooted ||
+    isCaptured ||
+    isRazed ||
+    isKilled ||
+    isAttempted ||
+    isRecaptured ||
+    isPillaged ||
+    isAmbush;
+
+  if (!hasCombat) return null;
 
   const dateMatch = trimmed.match(/^([A-Za-z]+\s+\d+\s+of\s+YR\d+)/i);
   const date = dateMatch ? dateMatch[1] : "";
@@ -813,6 +950,14 @@ function parseLineToAttack(line: string): ParsedAttack | null {
 
   // Prefer explicit patterns where attacker captured X acres from defender
   let explicitMatched = false;
+
+  // If it's an unknown province from a kingdom, record attacker kd from the line
+  const unknownOwnMatch = cleaned.match(/^An unknown province from\s+(.*?)\s*\((\d+:\d+)\)/i);
+  if (unknownOwnMatch) {
+    attackerProv = "An unknown Province";
+    attackerKd = unknownOwnMatch[2];
+    explicitMatched = true;
+  }
   // Special-case lines like "An unknown province from X (KD) recaptured 123 acres of land from Y (KD)"
   const unknownAttackerMatch = cleaned.match(/^An unknown province from\s+(.*?)\s*\((\d+:\d+)\)\s*(?:recaptured|captured|invaded|attacked)[\s\S]*?[\d,]+\s+acres[\s\S]*?\bfrom\s+(.*?)\s*\((\d+:\d+)\)/i);
   if (unknownAttackerMatch) {
@@ -854,7 +999,9 @@ function parseLineToAttack(line: string): ParsedAttack | null {
       cleaned.match(/from\s+(.*?)\(\[(\d+:\d+)\]\)/) ||
       cleaned.match(/from\s+(.*?)\((\d+:\d+)\)/) ||
       cleaned.match(/invaded\s+(.*?)\(\[(\d+:\d+)\]\)/) ||
-      cleaned.match(/invaded\s+(.*?)\((\d+:\d+)\)/);
+      cleaned.match(/invaded\s+(.*?)\((\d+:\d+)\)/) ||
+      cleaned.match(/attempted\s+to\s+invade\s+(.*?)\(\[(\d+:\d+)\]\)/) ||
+      cleaned.match(/attempted\s+to\s+invade\s+(.*?)\((\d+:\d+)\)/);
     if (defenderMatch) {
       defenderProv = defenderMatch[1].trim().replace(/-\s*$/, "").trim();
       defenderKd = defenderMatch[2];
@@ -865,11 +1012,12 @@ function parseLineToAttack(line: string): ParsedAttack | null {
   if (isAttempted) type = "fail";
   else if (isRazed) type = "raze";
   else if (isLooted && !isCaptured) type = "plunder";
+  else if (isAmbush && isCaptured) type = "land";
   else if (isCaptured && !isRazed) type = "land";
   else if (isKilled && !isCaptured && !isRazed) type = "massacre";
-  else if (isInvaded || isAttacked || isRecaptured || isPillaged) {
+  else if (isInvaded || isAttacked || isRecaptured || isPillaged || isAmbush) {
     if (isKilled && !isCaptured && !isRazed) type = "massacre";
-    else if (isCaptured) type = "land";
+    else if (isCaptured || isAmbush) type = "land";
     else type = "other";
   }
 
@@ -882,6 +1030,7 @@ function parseLineToAttack(line: string): ParsedAttack | null {
   else if (isWar) category = /we have declared|we have declared WAR/i.test(content) ? "War Declaration" : "Enemy Declaration";
   else if (isCeasefire) category = /withdraw|withdrew/i.test(content) ? "Withdrew Proposal" : "Ceasefire";
   else if (isRecaptured) category = "Ambush";
+  else if (isAmbush) category = "Ambush";
   else if (isPillaged) category = "Plunder";
   else if (isLooted) category = "Learn";
   else if (isRazed) category = "Raze";
@@ -904,8 +1053,6 @@ function parseLineToAttack(line: string): ParsedAttack | null {
   const killsMatch = cleaned.match(/killed\s+(\d[\d,]*)\s+people/);
   if (killsMatch) kills = parseInt(killsMatch[1].replace(/,/g, ""), 10);
 
-  const isOutgoing = attackerKd === OUR_KD;
-
   return {
     raw: trimmed,
     date,
@@ -918,7 +1065,7 @@ function parseLineToAttack(line: string): ParsedAttack | null {
     acres,
     books,
     kills,
-    isOutgoing,
+    isOutgoing: false,
   };
 }
 
@@ -1003,21 +1150,75 @@ function summarize(attacks: ParsedAttack[]): SummaryResult {
 const Next15: React.FC = () => {
   const [input, setInput] = useState<string>("");
   const [report, setReport] = useState<string>("");
+  const [ourKdInput, setOurKdInput] = useState<string>("");
+  const [enemyKdInput, setEnemyKdInput] = useState<string>("");
   const [copied, setCopied] = useState<boolean>(false);
 
   const handleGenerate = () => {
-    const lines = input.split(/\r?\n/).filter((l) => l.trim().length > 0);
-    const attacks: ParsedAttack[] = [];
-    // assign a sequential tick to each parsed attack so we can group uniques by window
-    let attackTick = 0;
-    for (const line of lines) {
-      const parsed = parseLineToAttack(line);
+    const rawLines = input.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    const sortedEntries = rawLines
+      .map((line, idx) => ({ line, idx, tick: parseTickFromLine(line) ?? Number.POSITIVE_INFINITY }))
+      .sort((a, b) => (a.tick === b.tick ? a.idx - b.idx : a.tick - b.tick));
+
+    const parsedAttacks: ParsedAttack[] = [];
+    let lastTick = 0; // monotonic hour-like counter
+    const perDateSeq: Record<number, number> = {};
+    for (const entry of sortedEntries) {
+      const parsed = parseLineToAttack(entry.line);
       if (parsed) {
-        attackTick += 1;
-        // attach a runtime-only tick; ParsedAttack type doesn't include this field
-        (parsed as any)._tick = attackTick;
-        attacks.push(parsed);
+        let tickVal: number;
+        if (Number.isFinite(entry.tick)) {
+          const baseHours = (entry.tick as number) * 24; // convert day tick to hour scale
+          const seq = (perDateSeq[entry.tick as number] = (perDateSeq[entry.tick as number] || 0) + 1);
+          tickVal = baseHours + (seq - 1);
+        } else {
+          tickVal = lastTick + 1; // fallback strictly increasing
+        }
+        lastTick = tickVal;
+        (parsed as any)._tick = tickVal;
+        parsedAttacks.push(parsed);
       }
+    }
+
+    // Infer kingdoms from parsed data if inputs are blank
+    const kdCounts: Record<string, { atk: number; def: number; total: number }> = {};
+    for (const a of parsedAttacks) {
+      if (a.attackerKd) {
+        const k = a.attackerKd;
+        kdCounts[k] = kdCounts[k] || { atk: 0, def: 0, total: 0 };
+        kdCounts[k].atk += 1; kdCounts[k].total += 1;
+      }
+      if (a.defenderKd) {
+        const k = a.defenderKd;
+        kdCounts[k] = kdCounts[k] || { atk: 0, def: 0, total: 0 };
+        kdCounts[k].def += 1; kdCounts[k].total += 1;
+      }
+    }
+    const kdEntries = Object.entries(kdCounts).sort((a, b) => {
+      if (b[1].def !== a[1].def) return b[1].def - a[1].def; // prefer who got hit most as our kd
+      if (b[1].total !== a[1].total) return b[1].total - a[1].total;
+      return a[0].localeCompare(b[0]);
+    });
+
+    const inferredOur = kdEntries[0]?.[0];
+    const inferredEnemy = kdEntries.find(([k]) => k !== inferredOur)?.[0];
+
+    const ourInput = (ourKdInput || "").trim();
+    const enemyInput = (enemyKdInput || "").trim();
+
+    OUR_KD = inferredOur || ourInput || "3:12";
+    ENEMY_KD = inferredEnemy || enemyInput || inferredOur || "6:7";
+
+    // Recompute isOutgoing and drop duplicate outgoing lines now that OUR_KD is set
+    const attacks: ParsedAttack[] = [];
+    const seenOutgoing = new Set<string>();
+    for (const a of parsedAttacks) {
+      a.isOutgoing = a.attackerKd === OUR_KD;
+      if (a.isOutgoing) {
+        if (seenOutgoing.has(a.raw)) continue;
+        seenOutgoing.add(a.raw);
+      }
+      attacks.push(a);
     }
 
     if (attacks.length === 0) {
@@ -1025,7 +1226,7 @@ const Next15: React.FC = () => {
       return;
     }
     // Build the UI-style report (original Next15 format)
-    const out = detailedReportUI(attacks, lines);
+    const out = detailedReportUI(attacks, rawLines);
     setReport(out);
   };
 

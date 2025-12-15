@@ -157,7 +157,7 @@ function parseLineToAttack(line) {
 
 // summarize() removed — using detailedSummary() below instead
 
-const file = path.join(__dirname, '..', 'src', 'data', 'news.txt');
+const file = path.join(__dirname, '..', 'src', 'data', 'news2.txt');
 if (!fs.existsSync(file)) { console.error('news.txt not found at', file); process.exit(1); }
 const txt = fs.readFileSync(file, 'utf8');
 const rawLines = txt.split(/\r?\n/).map(l=>l);
