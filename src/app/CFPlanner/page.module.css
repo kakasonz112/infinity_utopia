@@ -113,6 +113,11 @@
     box-shadow 120ms ease-out,
     background 120ms ease-out;
   box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.75);
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  padding-right: 2rem; /* room for custom arrow */
+  cursor: pointer;
 }
 
 .input::placeholder {
@@ -126,6 +131,17 @@
     0 0 0 1px rgba(37, 99, 235, 0.7),
     0 0 0 6px rgba(37, 99, 235, 0.15);
   background: radial-gradient(circle at top left, rgba(37, 99, 235, 0.42), rgba(15, 23, 42, 0.98));
+}
+
+/* Force dark dropdown options and hide native arrow on IE/Edge */
+.select option {
+  background: rgba(2, 6, 23, 0.9);
+  color: #e5e7eb;
+  cursor: pointer;
+}
+
+.select::-ms-expand {
+  display: none;
 }
 
 /* Schedule */

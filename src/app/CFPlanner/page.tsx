@@ -12,18 +12,18 @@ const HORSE_GROWTH_TICKS = 29;
 type UtDate = {
   day: number;   // 1-24
   month: number; // 0-6
-  year: number;  // 1-12
+  year: number;  // 0-11 (game starts at Jan Yr0)
 };
 
 function utDateToTicks(date: UtDate): number {
-  const yearOffset = (date.year - 1) * DAYS_PER_CYCLE;
+  const yearOffset = date.year * DAYS_PER_CYCLE;
   const monthOffset = date.month * DAYS_PER_MONTH;
   const dayOffset = date.day - 1;
   return yearOffset + monthOffset + dayOffset;
 }
 
 function ticksToUtDate(ticks: number): UtDate {
-  const year = Math.floor(ticks / DAYS_PER_CYCLE) + 1;
+  const year = Math.floor(ticks / DAYS_PER_CYCLE);
   const withinYear = ticks % DAYS_PER_CYCLE;
   const month = Math.floor(withinYear / DAYS_PER_MONTH);
   const day = (withinYear % DAYS_PER_MONTH) + 1;
@@ -82,31 +82,42 @@ function computeCfPhases(params: {
 }
 
 export default function CfPlannerPage() {
-  const [startDay, setStartDay] = useState<number>(7);
+  const [startDay, setStartDay] = useState<number | "">(1);
   const [startMonth, setStartMonth] = useState<number>(0); // Jan
-  const [startYear, setStartYear] = useState<number>(3);
+  const [startYear, setStartYear] = useState<number | "">(0);
 
-  const [ritualOffsetFromStart, setRitualOffsetFromStart] = useState<number>(34);
-  const [draftOffsetBeforeEnd, setDraftOffsetBeforeEnd] = useState<number>(55);
-  const [armouriesBuildTicks, setArmouriesBuildTicks] = useState<number>(12);
-  const [armyTrainTicks, setArmyTrainTicks] = useState<number>(14);
-  const [afterRitualBuildTicks, setAfterRitualBuildTicks] = useState<number>(14);
+  const [ritualOffsetFromStart, setRitualOffsetFromStart] = useState<number | "">(34);
+  const [draftOffsetBeforeEnd, setDraftOffsetBeforeEnd] = useState<number | "">(44);
+  const [armouriesBuildTicks, setArmouriesBuildTicks] = useState<number | "">(12);
+  const [armyTrainTicks, setArmyTrainTicks] = useState<number | "">(14);
+  const [afterRitualBuildTicks, setAfterRitualBuildTicks] = useState<number | "">(9);
 
 
   const [isCopying, setIsCopying] = useState(false);
 
+  // Helper to coerce possibly-empty input states into numbers with sensible defaults
+  const parseNumber = (v: number | "", def: number) => {
+    if (v === "" || v === null || v === undefined) return def;
+    const n = Number(v);
+    return Number.isNaN(n) ? def : n;
+  };
+
   const phases = computeCfPhases({
-    start: { day: startDay, month: startMonth, year: startYear },
-    ritualOffsetFromStart,
-    draftOffsetBeforeEnd,
-    armouriesBuildTicks,
-    armyTrainTicks,
+    start: {
+      day: parseNumber(startDay, 1),
+      month: startMonth,
+      year: parseNumber(startYear, 0),
+    },
+    ritualOffsetFromStart: parseNumber(ritualOffsetFromStart, 34),
+    draftOffsetBeforeEnd: parseNumber(draftOffsetBeforeEnd, 44),
+    armouriesBuildTicks: parseNumber(armouriesBuildTicks, 12),
+    armyTrainTicks: parseNumber(armyTrainTicks, 14),
   });
 
   const discordText = useMemo(() => {
     const lines = [
       `${formatUtDate(phases.startRitual)}     Start Ritual`,
-      `${formatUtDate(phases.draftTime)}     Approximate Drafting Time (Check your own)`,
+      `${formatUtDate(phases.draftTime)}     Approximate Drafting Time(${draftOffsetBeforeEnd}h) (Check your own)`,
       `${formatUtDate(phases.wages200)}     Wages to 200% (48h until eowcf), recommended time to build homes`,
       `${formatUtDate(phases.stablesBuildStart)}     Attackers – Build Stables (${phases.stablesBuildTime}h build)`,
       `${formatUtDate(phases.lpForHorses)}     Attackers – L&P for horses`,
@@ -154,9 +165,11 @@ export default function CfPlannerPage() {
                 min={1}
                 max={24}
                 value={startDay}
-                onChange={(e) =>
-                  setStartDay(Math.min(24, Math.max(1, Number(e.target.value) || 1)))
-                }
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "") return setStartDay("");
+                  setStartDay(Math.min(24, Math.max(1, Number(v))));
+                }}
                 className={styles.input}
               />
             </label>
@@ -177,15 +190,17 @@ export default function CfPlannerPage() {
             </label>
 
             <label className={styles.field}>
-              <span className={styles.label}>Year (1-12)</span>
+              <span className={styles.label}>Year (0-11)</span>
               <input
                 type="number"
-                min={1}
-                max={12}
+                min={0}
+                max={11}
                 value={startYear}
-                onChange={(e) =>
-                  setStartYear(Math.min(12, Math.max(1, Number(e.target.value) || 1)))
-                }
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "") return setStartYear("");
+                  setStartYear(Math.min(11, Math.max(0, Number(v))));
+                }}
                 className={styles.input}
               />
             </label>
@@ -204,11 +219,11 @@ export default function CfPlannerPage() {
                 min={1}
                 max={72}
                 value={ritualOffsetFromStart}
-                onChange={(e) =>
-                  setRitualOffsetFromStart(
-                    Math.min(72, Math.max(1, Number(e.target.value) || 1)),
-                  )
-                }
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "") return setRitualOffsetFromStart("");
+                  setRitualOffsetFromStart(Math.min(72, Math.max(1, Number(v))));
+                }}
                 className={styles.input}
               />
             </label>
@@ -222,11 +237,11 @@ export default function CfPlannerPage() {
                 min={1}
                 max={60}
                 value={draftOffsetBeforeEnd}
-                onChange={(e) =>
-                  setDraftOffsetBeforeEnd(
-                    Math.min(60, Math.max(1, Number(e.target.value) || 1)),
-                  )
-                }
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "") return setDraftOffsetBeforeEnd("");
+                  setDraftOffsetBeforeEnd(Math.min(60, Math.max(1, Number(v))));
+                }}
                 className={styles.input}
               />
             </label>
@@ -239,9 +254,15 @@ export default function CfPlannerPage() {
                 max={48}
                 value={armouriesBuildTicks}
                 onChange={(e) => {
-                const v = Math.min(48, Math.max(1, Number(e.target.value) || 1));
-                setArmouriesBuildTicks(v);
-                setAfterRitualBuildTicks(v * 0.75); // or whatever logic you want
+                  const raw = e.target.value;
+                  if (raw === "") {
+                    setArmouriesBuildTicks("");
+                    setAfterRitualBuildTicks("");
+                    return;
+                  }
+                  const v = Math.min(48, Math.max(1, Number(raw)));
+                  setArmouriesBuildTicks(v);
+                  setAfterRitualBuildTicks(Math.round(v * 0.75));
                 }}
                 className={styles.input}
               />
@@ -254,11 +275,11 @@ export default function CfPlannerPage() {
                 min={1}
                 max={48}
                 value={armyTrainTicks}
-                onChange={(e) =>
-                  setArmyTrainTicks(
-                    Math.min(48, Math.max(1, Number(e.target.value) || 1)),
-                  )
-                }
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "") return setArmyTrainTicks("");
+                  setArmyTrainTicks(Math.min(48, Math.max(1, Number(v))));
+                }}
                 className={styles.input}
               />
             </label>
@@ -292,7 +313,7 @@ export default function CfPlannerPage() {
                 {formatUtDate(phases.draftTime)}
               </span>
               <span className={styles.scheduleText}>
-                Approximate Drafting Time (Check your own)
+                Approximate Drafting Time ({draftOffsetBeforeEnd}h) (Check your own)
               </span>
             </li>
 
