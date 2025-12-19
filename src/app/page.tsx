@@ -6,12 +6,12 @@ import Image from 'next/image';
 import styles from './page.module.css';
 
 const tools = [
-  { href: '/kingdoms', icon: 'K', title: 'View Kingdoms', desc: 'Browse kingdom stats and summaries' },
+  { href: '/kingdoms', icon: 'View', title: 'View Kingdoms', desc: 'Browse kingdom stats and summaries' },
   { href: '/counter', icon: 'C', title: 'Target Counter', desc: 'Adjust target counts quickly' },
-  { href: '/target', icon: 'T', title: 'Target Assign', desc: 'Assign and review targets' },
-  { href: '/parser', icon: 'W', title: 'War Target Assign', desc: 'Run war planning utilities' },
-  { href: '/CFPlanner', icon: 'F', title: 'CF Planner', desc: 'Ceasefire planning tools' },
-  { href: '/formatter', icon: 'U', title: 'Utopia CE Formatter', desc: 'Paste kingdom news and get reports' },
+  { href: '/target', icon: 'A', title: 'Target Assign', desc: 'Assign and review targets' },
+  { href: '/parser', icon: 'War', title: 'War Target Assign', desc: 'Run war planning utilities' },
+  { href: '/CFPlanner', icon: 'CF', title: 'CF Planner', desc: 'Ceasefire planning tools' },
+  { href: '/formatter', icon: 'CE', title: 'Utopia CE Formatter', desc: 'Paste kingdom news and get reports' },
 ];
 
 export default function Home() {
@@ -65,14 +65,8 @@ export default function Home() {
           ))}
         </section>
 
-        <p className={styles.footerNote}>Tip: Use the Formatter for instant, Discord-ready war reports.</p>
+        <p className={styles.footerNote}>Tip: Use the CE Formatter for formatted summarize report.</p>
       </div>
-
-      <footer className={styles.footerBar}>
-        <div>© 2025 INFINITY KINGDOM. All rights reserved.</div>
-        <div>Created by KAKA</div>
-        <div className={styles.footerSmall}>This project is a fan-made tool and is not affiliated with MUGA. UTOPIA game content and trademarks are the property of MUGA.</div>
-      </footer>
     </main>
   );
 }
