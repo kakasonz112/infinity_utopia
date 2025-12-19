@@ -6,12 +6,12 @@ import Image from 'next/image';
 import styles from './page.module.css';
 
 const tools = [
-  { href: '/kingdoms', icon: 'View', title: 'View Kingdoms', desc: 'Browse kingdom stats and summaries' },
-  { href: '/counter', icon: 'C', title: 'Target Counter', desc: 'Adjust target counts quickly' },
-  { href: '/target', icon: 'A', title: 'Target Assign', desc: 'Assign and review targets' },
-  { href: '/parser', icon: 'War', title: 'War Target Assign', desc: 'Run war planning utilities' },
-  { href: '/CFPlanner', icon: 'CF', title: 'CF Planner', desc: 'Ceasefire planning tools' },
-  { href: '/formatter', icon: 'CE', title: 'Utopia CE Formatter', desc: 'Paste kingdom news and get reports' },
+  { href: '/kingdoms', icon: 'View', title: 'View Kingdoms', desc: 'Overview of all kingdoms taken from kingdom_dump_v2 with CF tracker but its +1/-1 tick off due to the dump api not updated on time.' },
+  { href: '/counter', icon: 'C', title: 'Target Counter', desc: 'A counter to count how much the province has been hit' },
+  { href: '/target', icon: 'A', title: 'Target Assign', desc: 'Basically to assign target base on best gain ratio to everyone. Just ctrl-a on kingdom page n paste into the input field' },
+  { href: '/parser', icon: 'War', title: 'War Target Assign', desc: 'To assign multiple specific target and assign to attackers to hit' },
+  { href: '/CFPlanner', icon: 'CF', title: 'CF Planner', desc: ' Generate EOWCF schedule' },
+  { href: '/formatter', icon: 'CE', title: 'Utopia CE Formatter', desc: ' Generate war summary like Seraphim(dead)' },
 ];
 
 export default function Home() {
