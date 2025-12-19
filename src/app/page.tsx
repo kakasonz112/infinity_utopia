@@ -11,7 +11,7 @@ const tools = [
   { href: '/target', icon: 'A', title: 'Target Assign', desc: 'Basically to assign target base on best gain ratio to everyone. Just ctrl-a on kingdom page n paste into the input field' },
   { href: '/parser', icon: 'War', title: 'War Target Assign', desc: 'To assign multiple specific target and assign to attackers to hit' },
   { href: '/CFPlanner', icon: 'CF', title: 'CF Planner', desc: ' Generate EOWCF schedule' },
-  { href: '/formatter', icon: 'CE', title: 'Utopia CE Formatter', desc: ' Generate war summary like Seraphim(dead)' },
+  { href: '/formatter', icon: 'CE', title: 'Utopia News Formatter', desc: ' Generate war/province summary like Seraphim(dead)' },
 ];
 
 export default function Home() {

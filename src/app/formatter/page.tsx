@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import styles from "./page.module.css";
+import { parseProvinceNews } from "../../lib/provinceParser";
 
 type ParsedAttackType =
   | "land"
@@ -1150,11 +1151,22 @@ function summarize(attacks: ParsedAttack[]): SummaryResult {
 const Next15: React.FC = () => {
   const [input, setInput] = useState<string>("");
   const [report, setReport] = useState<string>("");
+  const [provJson, setProvJson] = useState<any>(null);
+  const [provLog, setProvLog] = useState<string[]>([]);
+  const [mode, setMode] = useState<'kingdom'|'province'>('kingdom');
   const [ourKdInput, setOurKdInput] = useState<string>("");
   const [enemyKdInput, setEnemyKdInput] = useState<string>("");
   const [copied, setCopied] = useState<boolean>(false);
 
   const handleGenerate = () => {
+    if (mode === 'province') {
+      const { text, log, formatted, json } = parseProvinceNews(input);
+      // Store structured outputs for UI and show the concise formatted summary
+      setProvJson(json || null);
+      setProvLog(log || []);
+      setReport(formatted || text || "");
+      return;
+    }
     const rawLines = input.split(/\r?\n/).filter((l) => l.trim().length > 0);
     const sortedEntries = rawLines
       .map((line, idx) => ({ line, idx, tick: parseTickFromLine(line) ?? Number.POSITIVE_INFINITY }))
@@ -1232,14 +1244,22 @@ const Next15: React.FC = () => {
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.heading}>Utopia CE Formatter</h2>
-      <p className={styles.description}>Paste kingdom news to generate a formatted summary.</p>
+      <h2 className={styles.heading}>Utopia News Formatter</h2>
+      <p className={styles.description}>Paste news log to generate a formatted summary.</p>
+      <div style={{ marginBottom: 10 }}>
+        <label style={{ marginRight: 12 }}>
+          <input type="radio" name="mode" value="kingdom" checked={mode==='kingdom'} onChange={()=>setMode('kingdom')} /> Kingdom Formatter
+        </label>
+        <label>
+          <input type="radio" name="mode" value="province" checked={mode==='province'} onChange={()=>setMode('province')} /> Province Formatter
+        </label>
+      </div>
       <textarea
         className={styles.textarea}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         rows={18}
-        placeholder="Paste kingdom news here…"
+        placeholder="Paste news log here…"
       />
       <button onClick={handleGenerate} className={styles.button}>
         Generate report
