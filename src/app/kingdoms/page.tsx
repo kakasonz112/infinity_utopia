@@ -240,6 +240,27 @@ export default function Kingdoms() {
         });
     };
 
+    // Per-kingdom province sort configs: key is `${kingdomNumber}-${kingdomIsland}`
+    const [provinceSortConfigs, setProvinceSortConfigs] = useState<{
+        [key: string]: { key: string; direction: "ASC" | "DESC" };
+    }>({});
+
+    const sortProvinces = (kingdomKey: string, key: keyof Province) => {
+        setProvinceSortConfigs((prev) => {
+            const prevCfg = prev[kingdomKey];
+            const direction = prevCfg && prevCfg.key === key
+                ? (prevCfg.direction === "ASC" ? "DESC" : "ASC")
+                : "ASC";
+            return { ...prev, [kingdomKey]: { key: key as string, direction } };
+        });
+    };
+
+    const getProvSortIcon = (kingdomKey: string, key: string) => {
+        const cfg = provinceSortConfigs[kingdomKey];
+        if (cfg?.key === key) return cfg.direction === "ASC" ? "▲" : "▼";
+        return "";
+    };
+
     // ---- Status column logic (aligned with 96 ticks ≈ 344000000 ms) ----
     const MS_PER_TICK = 1000 * 60 * 60;        // 1 hour = 1 in-game day / tick
     const CEASEFIRE_TICKS = 96;                // 96 ticks
@@ -403,27 +424,63 @@ export default function Kingdoms() {
                                         <table className={styles.provinceTable}>
                                             <thead>
                                                 <tr>
-                                                    <th>Slot</th>
-                                                    <th>Name</th>
-                                                    <th>Land</th>
-                                                    <th>Race</th>
-                                                    <th>Honor</th>
-                                                    <th>Networth</th>
-                                                    <th>Protection</th>
+                                                    <th onClick={() => sortProvinces(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'slot')} style={{ cursor: 'pointer' }}>
+                                                        Slot {getProvSortIcon(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'slot')}
+                                                    </th>
+                                                    <th onClick={() => sortProvinces(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'name')} style={{ cursor: 'pointer' }}>
+                                                        Name {getProvSortIcon(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'name')}
+                                                    </th>
+                                                    <th onClick={() => sortProvinces(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'land')} style={{ cursor: 'pointer' }}>
+                                                        Land {getProvSortIcon(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'land')}
+                                                    </th>
+                                                    <th onClick={() => sortProvinces(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'race')} style={{ cursor: 'pointer' }}>
+                                                        Race {getProvSortIcon(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'race')}
+                                                    </th>
+                                                    <th onClick={() => sortProvinces(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'honorName')} style={{ cursor: 'pointer' }}>
+                                                        Honor {getProvSortIcon(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'honorName')}
+                                                    </th>
+                                                    <th onClick={() => sortProvinces(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'networth')} style={{ cursor: 'pointer' }}>
+                                                        Networth {getProvSortIcon(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'networth')}
+                                                    </th>
+                                                    <th onClick={() => sortProvinces(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'protected')} style={{ cursor: 'pointer' }}>
+                                                        Protection {getProvSortIcon(`${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`, 'protected')}
+                                                    </th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
-                                                {kingdom.provinces.map((province) => (
-                                                    <tr key={province.slot}>
-                                                        <td>#{province.slot}</td>
-                                                        <td>{province.name}</td>
-                                                        <td>{formatNumber(province.land)}</td>
-                                                        <td>{province.race}</td>
-                                                        <td>{province.honorName}</td>
-                                                        <td>{formatNumber(province.networth)}</td>
-                                                        <td>{province.protected ? "Yes" : "No"}</td>
-                                                    </tr>
-                                                ))}
+                                                <tbody>
+                                                {(() => {
+                                                    const kingdomKey = `${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`;
+                                                    const cfg = provinceSortConfigs[kingdomKey];
+                                                    const displayedProvinces = [...kingdom.provinces];
+                                                    if (cfg) {
+                                                        displayedProvinces.sort((a, b) => {
+                                                            const aVal = a[cfg.key as keyof Province] ?? '';
+                                                            const bVal = b[cfg.key as keyof Province] ?? '';
+
+                                                            if (typeof aVal === 'number' && typeof bVal === 'number') {
+                                                                return cfg.direction === 'ASC' ? aVal - bVal : bVal - aVal;
+                                                            }
+                                                            if (typeof aVal === 'boolean' && typeof bVal === 'boolean') {
+                                                                return cfg.direction === 'ASC' ? Number(aVal) - Number(bVal) : Number(bVal) - Number(aVal);
+                                                            }
+                                                            return cfg.direction === 'ASC'
+                                                                ? String(aVal).localeCompare(String(bVal))
+                                                                : String(bVal).localeCompare(String(aVal));
+                                                        });
+                                                    }
+
+                                                    return displayedProvinces.map((province) => (
+                                                        <tr key={province.slot}>
+                                                            <td>#{province.slot}</td>
+                                                            <td>{province.name}</td>
+                                                            <td>{formatNumber(province.land)}</td>
+                                                            <td>{province.race}</td>
+                                                            <td>{province.honorName}</td>
+                                                            <td>{formatNumber(province.networth)}</td>
+                                                            <td>{province.protected ? "Yes" : "No"}</td>
+                                                        </tr>
+                                                    ));
+                                                })()}
                                             </tbody>
                                         </table>
                                         <div className={styles.raceDistribution}>
