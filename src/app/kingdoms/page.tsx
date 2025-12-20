@@ -63,7 +63,7 @@ const CEASEFIRE_HOURS = 96;
  * into the Utopia calendar format (Month Day). Ticks are 1-based.
  */
 const getUtopiaDatePartsFromTicks = (totalTicks: number) => {
-  const zeroBased = totalTicks - 1;            // 0-based day index
+  const zeroBased = totalTicks;            // 0-based day index
 
   const year = Math.floor(zeroBased / DAYS_PER_CYCLE);   // 0,1,2,...
   const dayInYear = zeroBased % DAYS_PER_CYCLE;          // 0..167
@@ -88,6 +88,7 @@ export default function Kingdoms() {
     const [biggestNetworth, setNetworth] = useState<number>(0);
     const [biggestLand, setLand] = useState<number>(0);
     const [filteredKingdoms, setFilteredKingdoms] = useState<Kingdom[]>([]);
+    const [originalOrder, setOriginalOrder] = useState<Kingdom[]>([]);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [filters, setFilters] = useState<Filters>({
         land: [0, 0],
@@ -104,11 +105,8 @@ export default function Kingdoms() {
 
     const formatNumber = (num: number) => new Intl.NumberFormat().format(num);
 
-    // Sorting state
-    const [sortConfig, setSortConfig] = useState<{ key: string; direction: "ASC" | "DESC" }>({
-        key: "kingdomName",
-        direction: "ASC",
-    });
+    // Sorting state: allow multiple active sorts. Newest clicked becomes highest priority.
+    const [sortConfig, setSortConfig] = useState<Array<{ key: string; direction: "ASC" | "DESC" }>>([]);
 
     // Debounce function (same as before)
     const debounce = (fn: () => void, delay: number) => {
@@ -182,6 +180,8 @@ export default function Kingdoms() {
         });
 
         setFilteredKingdoms(filtered);
+        // Save the default order for "reset to default" behavior
+        setOriginalOrder(filtered);
         setExpandedRows(new Set()); 
     }, [data, debouncedFilters, cfFilter, ceasefire]);
 
@@ -206,26 +206,96 @@ export default function Kingdoms() {
         return distribution;
     };
 
-    // Sorting functions (unchanged)
-    const sortKingdoms = (key: string) => {
-        const direction = sortConfig.direction === "ASC" ? "DESC" : "ASC";
-        setSortConfig({ key, direction });
+    type StatusSortValue = { kind: number; ticks: number };
+    type SortValue = number | string | StatusSortValue;
 
-        const sortedKingdoms = [...filteredKingdoms].sort((a, b) => {
-            const aValue = a[key as keyof Kingdom] ?? '';
-            const bValue = b[key as keyof Kingdom] ?? '';
-            if (aValue < bValue) return direction === "ASC" ? -1 : 1;
-            if (aValue > bValue) return direction === "ASC" ? 1 : -1;
+    const isStatusValue = (v: SortValue): v is StatusSortValue => {
+        return typeof v === "object" && v !== null && "kind" in v && "ticks" in v;
+    };
+
+    // Sorting functions (supports multiple active sort keys)
+    // Priority: the first column clicked remains highest priority until removed
+    const sortKingdoms = (key: string) => {
+        // find existing config
+        const existingIndex = sortConfig.findIndex((c) => c.key === key);
+        const newConfig = [...sortConfig];
+
+        if (existingIndex === -1) {
+            // not present -> add as lowest-priority (push), so first-clicked stays at index 0
+            newConfig.push({ key, direction: "ASC" });
+        } else {
+            const cur = newConfig[existingIndex];
+            if (cur.direction === "ASC") {
+                newConfig[existingIndex] = { key, direction: "DESC" };
+            } else {
+                // was DESC -> remove (cycle to NONE)
+                newConfig.splice(existingIndex, 1);
+            }
+        }
+
+        setSortConfig(newConfig);
+
+        if (newConfig.length === 0) {
+            setFilteredKingdoms(originalOrder);
+            return;
+        }
+
+        const valueForKey = (kingdom: Kingdom, keyName: string): SortValue => {
+            if (keyName === "status") {
+                const s = getWarCeasefireStatus(kingdom) ?? "";
+                if (s === "NONE") return { kind: 1, ticks: 0 };
+                const m = s.match(/\(([-\d.]+) ticks left\)/);
+                const ticks = m ? parseFloat(m[1]) : 0;
+                return { kind: 0, ticks };
+            }
+
+            const raw = kingdom[keyName as keyof Kingdom];
+            if (raw === null || raw === undefined) return "";
+            if (typeof raw === "number") return raw;
+            if (typeof raw === "boolean") return raw ? 1 : 0;
+            if (typeof raw === "string") {
+                const maybeNum = Number(String(raw).replace(/,/g, ""));
+                if (!isNaN(maybeNum)) return maybeNum;
+                return String(raw).toLowerCase();
+            }
+            return String(raw);
+        };
+
+        // Always sort from the original (filtered) baseline to avoid cumulative sort artifacts
+        const sortedKingdoms = [...originalOrder].sort((a, b) => {
+            for (const cfg of newConfig) {
+                const k = cfg.key;
+                const dir = cfg.direction === "ASC" ? 1 : -1;
+
+                const va = valueForKey(a, k);
+                const vb = valueForKey(b, k);
+
+                if (k === "status" && isStatusValue(va) && isStatusValue(vb)) {
+                    if (va.kind !== vb.kind) return (va.kind - vb.kind) * dir * -1;
+                    if (va.ticks !== vb.ticks) return (va.ticks < vb.ticks ? -1 : 1) * dir;
+                    continue;
+                }
+
+                if (typeof va === "number" && typeof vb === "number") {
+                    if (va < vb) return -1 * dir;
+                    if (va > vb) return 1 * dir;
+                    continue;
+                }
+
+                const sa = String(va);
+                const sb = String(vb);
+                const cmp = sa.localeCompare(sb);
+                if (cmp !== 0) return cmp * dir;
+            }
             return 0;
         });
         setFilteredKingdoms(sortedKingdoms);
     };
 
     const getSortIcon = (key: string) => {
-        if (sortConfig.key === key) {
-            return sortConfig.direction === "ASC" ? "▲" : "▼";
-        }
-        return "";
+        const cfg = sortConfig.find((c) => c.key === key);
+        if (!cfg) return "";
+        return cfg.direction === "ASC" ? "▲" : "▼";
     };
 
     const toggleRow = (key: string) => {
@@ -242,22 +312,29 @@ export default function Kingdoms() {
 
     // Per-kingdom province sort configs: key is `${kingdomNumber}-${kingdomIsland}`
     const [provinceSortConfigs, setProvinceSortConfigs] = useState<{
-        [key: string]: { key: string; direction: "ASC" | "DESC" };
+        [key: string]: { key: string; direction: "ASC" | "DESC" | "NONE" };
     }>({});
 
     const sortProvinces = (kingdomKey: string, key: keyof Province) => {
         setProvinceSortConfigs((prev) => {
             const prevCfg = prev[kingdomKey];
-            const direction = prevCfg && prevCfg.key === key
-                ? (prevCfg.direction === "ASC" ? "DESC" : "ASC")
-                : "ASC";
-            return { ...prev, [kingdomKey]: { key: key as string, direction } };
+            let nextDirection: "ASC" | "DESC" | "NONE";
+            if (!prevCfg || prevCfg.key !== key) nextDirection = "ASC";
+            else if (prevCfg.direction === "ASC") nextDirection = "DESC";
+            else if (prevCfg.direction === "DESC") nextDirection = "NONE";
+            else nextDirection = "ASC";
+
+            return { ...prev, [kingdomKey]: { key: key as string, direction: nextDirection } };
         });
     };
 
     const getProvSortIcon = (kingdomKey: string, key: string) => {
         const cfg = provinceSortConfigs[kingdomKey];
-        if (cfg?.key === key) return cfg.direction === "ASC" ? "▲" : "▼";
+        if (cfg?.key === key) {
+            if (cfg.direction === "ASC") return "▲";
+            if (cfg.direction === "DESC") return "▼";
+            return "☰";
+        }
         return "";
     };
 
@@ -389,8 +466,10 @@ export default function Kingdoms() {
                         <th onClick={() => sortKingdoms("warScore")} style={{ cursor: "pointer" }}>
                             War Score {getSortIcon("warScore")}
                         </th>
-                        {/* ---- Add the Status column here ---- */}
-                        <th>Status</th>
+                        {/* ---- Add the Status column here (sortable) ---- */}
+                        <th onClick={() => sortKingdoms("status")} style={{ cursor: "pointer" }}>
+                            Status {getSortIcon("status")}
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
@@ -452,7 +531,7 @@ export default function Kingdoms() {
                                                     const kingdomKey = `${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`;
                                                     const cfg = provinceSortConfigs[kingdomKey];
                                                     const displayedProvinces = [...kingdom.provinces];
-                                                    if (cfg) {
+                                                    if (cfg && cfg.direction !== 'NONE') {
                                                         displayedProvinces.sort((a, b) => {
                                                             const aVal = a[cfg.key as keyof Province] ?? '';
                                                             const bVal = b[cfg.key as keyof Province] ?? '';
