@@ -1247,12 +1247,22 @@ const Next15: React.FC = () => {
       <h2 className={styles.heading}>Utopia News Formatter</h2>
       <p className={styles.description}>Paste news log to generate a formatted summary.</p>
       <div style={{ marginBottom: 10 }}>
-        <label style={{ marginRight: 12 }}>
-          <input type="radio" name="mode" value="kingdom" checked={mode==='kingdom'} onChange={()=>setMode('kingdom')} /> Kingdom Formatter
-        </label>
-        <label>
-          <input type="radio" name="mode" value="province" checked={mode==='province'} onChange={()=>setMode('province')} /> Province Formatter
-        </label>
+        <div className={styles.tabs}>
+          <button
+            type="button"
+            className={`${styles.tab} ${mode === 'kingdom' ? styles.tabActive : ''}`}
+            onClick={() => setMode('kingdom')}
+          >
+            Kingdom Formatter
+          </button>
+          <button
+            type="button"
+            className={`${styles.tab} ${mode === 'province' ? styles.tabActive : ''}`}
+            onClick={() => setMode('province')}
+          >
+            Province Formatter
+          </button>
+        </div>
       </div>
       <textarea
         className={styles.textarea}

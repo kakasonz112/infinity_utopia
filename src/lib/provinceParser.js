@@ -1,5 +1,4 @@
 // CommonJS version of province parser for Node usage (auto-generated)
-const fs = require('fs');
 
 function parseProvinceNews(rawText) {
   const rawLines = String(rawText).split(/\r?\n/).map(l => l.trim()).filter(Boolean);

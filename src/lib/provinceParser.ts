@@ -417,8 +417,8 @@ export function parseProvinceNews(rawText: string) {
     if (m) lines.push(`Runes: ${m[1]}`);
   }
   lines.push('');
-  lines.push('🔮 Magery Operations');
-  lines.push('Failed Magery Attempts:');
+  lines.push('🔮 Spells Operations');
+  lines.push('Failed Spells Attempts:');
   for (const [k,v] of Object.entries(mageryMap)) lines.push(`${k}: ${v}x`);
   lines.push(`Spell Effects:`);
   // print all detected spell effects (Pitfalls, Blizzards, Magic Vortex, Meteors, etc.)

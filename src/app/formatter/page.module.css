@@ -158,3 +158,32 @@
     padding: 0.5rem 0.75rem;
   }
 }
+
+/* Tab toggle styles for formatter mode */
+.tabs {
+  display: inline-flex;
+  gap: 0.4rem;
+  background: rgba(15,23,42,0.6);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid rgba(148,163,184,0.04);
+}
+.tab {
+  padding: 0.38rem 0.75rem;
+  cursor: pointer;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #cbd5e1;
+  font-weight: 600;
+  transition: background 120ms ease, color 120ms ease, transform 120ms ease;
+}
+.tab:hover {
+  transform: translateY(-1px);
+}
+.tabActive {
+  background: linear-gradient(180deg, rgba(99,102,241,0.14), rgba(37,99,235,0.06));
+  color: #eef2ff;
+  border-color: rgba(99,102,241,0.18);
+  box-shadow: 0 6px 18px rgba(2,6,23,0.45);
+}
