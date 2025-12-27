@@ -47,9 +47,13 @@ function computeCfPhases(params: {
   const startTick = utDateToTicks(params.start);
   const endTick = startTick + CEASEFIRE_HOURS;
 
+  // Training day tick (used as reference for several offsets)
+  const activateRitualTrainingTick = endTick - params.armyTrainTicks;
+
   const cfEnd = ticksToUtDate(endTick);
   const startRitual = ticksToUtDate(startTick + params.ritualOffsetFromStart);
-  const draftTime = ticksToUtDate(endTick - params.draftOffsetBeforeEnd);
+  // Draft time is relative to the training day, not CF end
+  const draftTime = ticksToUtDate(activateRitualTrainingTick - params.draftOffsetBeforeEnd);
   const wages200 = ticksToUtDate(endTick - 48);
 
   const stablesBuildTime = params.armouriesBuildTicks;
@@ -58,13 +62,12 @@ function computeCfPhases(params: {
   );
   const lpForHorses = ticksToUtDate(endTick - HORSE_GROWTH_TICKS);
 
-  // Build Armouries: minus training first, then minus build
-  const armouriesStartTick =
-    endTick - params.armyTrainTicks - params.armouriesBuildTicks;
-  const armouriesStart = ticksToUtDate(armouriesStartTick);
-
   // Activate ritual & training day = army training window before CF end
-  const activateRitualTraining = ticksToUtDate(endTick - params.armyTrainTicks);
+  const activateRitualTraining = ticksToUtDate(activateRitualTrainingTick);
+
+  // Build Armouries: start so that build finishes by the training day
+  const armouriesStartTick = activateRitualTrainingTick - params.armouriesBuildTicks;
+  const armouriesStart = ticksToUtDate(armouriesStartTick);
   const convertWarBuilds = ticksToUtDate(endTick - stablesBuildTime);
 
   return {
@@ -87,7 +90,7 @@ export default function CfPlannerPage() {
   const [startYear, setStartYear] = useState<number | "">(0);
 
   const [ritualOffsetFromStart, setRitualOffsetFromStart] = useState<number | "">(34);
-  const [draftOffsetBeforeEnd, setDraftOffsetBeforeEnd] = useState<number | "">(44);
+  const [draftOffsetBeforeEnd, setDraftOffsetBeforeEnd] = useState<number | "">(42);
   const [armouriesBuildTicks, setArmouriesBuildTicks] = useState<number | "">(12);
   const [armyTrainTicks, setArmyTrainTicks] = useState<number | "">(14);
   const [afterRitualBuildTicks, setAfterRitualBuildTicks] = useState<number | "">(9);
@@ -230,7 +233,7 @@ export default function CfPlannerPage() {
 
             <label className={styles.field}>
               <span className={styles.label}>
-                Approx Drafting Time (ticks before CF end)
+                Approx Drafting Time (ticks before Training)
               </span>
               <input
                 type="number"
