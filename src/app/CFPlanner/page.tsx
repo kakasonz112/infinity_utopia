@@ -68,7 +68,7 @@ function computeCfPhases(params: {
   // Build Armouries: start so that build finishes by the training day
   const armouriesStartTick = activateRitualTrainingTick - params.armouriesBuildTicks;
   const armouriesStart = ticksToUtDate(armouriesStartTick);
-  const convertWarBuilds = ticksToUtDate(endTick - stablesBuildTime);
+  const convertWarBuilds = ticksToUtDate(endTick - Math.round(stablesBuildTime * 0.75));
 
   return {
     cfEnd,
