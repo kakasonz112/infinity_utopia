@@ -351,48 +351,20 @@ export default function Kingdoms() {
 
         const nowMs = Date.now();
         const gameStartUtc = new Date(data.startDate + "Z"); // interpret as UTC
-        const gameStartMs = gameStartUtc.getTime()        
-        const cfStartMs = rec.timestamp;                         // ms from Date.now()
+        const gameStartMs = gameStartUtc.getTime();
+        const cfStartMs = rec.timestamp; // ms from epoch when CF started
 
-        // DEBUG: log base info
-        console.log("=== CF DEBUG ===");
-        console.log("Kingdom key:", key);
-        console.log("gameStartMs:", gameStartMs, "->", new Date(gameStartMs).toISOString());
-        console.log("cfStartMs:", cfStartMs, "->", new Date(cfStartMs).toISOString());
-        console.log("nowMs:", nowMs, "->", new Date(nowMs).toISOString());
-
-        // 1) Remaining ticks / hours for display
-        const elapsedMs = nowMs - cfStartMs;
-        const elapsedTicks = elapsedMs / MS_PER_TICK;            // 1 tick = 1 hour
-        const remainingTicks = CEASEFIRE_TICKS - elapsedTicks;
-
-        console.log("elapsedMs:", elapsedMs);
-        console.log("elapsedTicks:", elapsedTicks);
-        console.log("remainingTicks:", remainingTicks);
-
-        if (remainingTicks <= 0) {
-            console.log("CF expired -> NONE");
-            return "NONE";
-        }
-
-        // 2) CF END time in real ms (using your 96-tick ≈ 344000000 ms value)
+        // CF end in real ms
         const cfEndMs = cfStartMs + CEASEFIRE_MS;
-        console.log("cfEndMs:", cfEndMs, "->", new Date(cfEndMs).toISOString());
 
-        // 3) CF END tick index since game start (1-based)
-        const diffMs = cfEndMs - gameStartMs;
-        const rawTicks = diffMs / MS_PER_TICK; // 0-based
-        const cfEndTick = Math.round(rawTicks) + 2;
+        // Remaining ticks derived from CF end time, with user +2 offset so display matches their logic
+        const remainingTicks = (cfEndMs - nowMs) / MS_PER_TICK + 2;
+        if (remainingTicks <= 0) return "NONE";
 
-        console.log("diffMs (cfEnd - gameStart):", diffMs);
-        console.log("rawTicks (0-based):", rawTicks);
-        console.log("cfEndTick (1-based):", cfEndTick);
+        // CF end tick index relative to game start (zero-based)
+        const cfEndTickZeroBased = Math.floor((cfEndMs - gameStartMs) / MS_PER_TICK);
 
-        // 4) Convert that tick to Utopia calendar date
-        const utopiaEndDate = getUtopiaDateFromTicks(cfEndTick);
-        console.log("utopiaEndDate:", utopiaEndDate);
-        console.log("=== END CF DEBUG ===");
-
+        const utopiaEndDate = getUtopiaDateFromTicks(cfEndTickZeroBased);
         return `War CF End: ${utopiaEndDate} (${remainingTicks.toFixed(1)} ticks left)`;
     }
 
