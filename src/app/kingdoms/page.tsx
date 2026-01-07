@@ -105,6 +105,13 @@ export default function Kingdoms() {
 
     const formatNumber = (num: number) => new Intl.NumberFormat().format(num);
 
+    // Shared helper so status + filter use identical remaining-tick math (keeps the +2 cushion)
+    const getRemainingTicks = (rec?: CeasefireRecord) => {
+        if (!rec || !rec.isCeasefire) return 0;
+        const elapsedHours = (Date.now() - rec.timestamp) / (1000 * 3600);
+        return CEASEFIRE_HOURS - elapsedHours + 2;
+    };
+
     // Sorting state: allow multiple active sorts. Newest clicked becomes highest priority.
     const [sortConfig, setSortConfig] = useState<Array<{ key: string; direction: "ASC" | "DESC" }>>([]);
 
@@ -166,14 +173,10 @@ export default function Kingdoms() {
             if (cfFilter === "CF_ONLY") {
                 const key = `${kingdom.kingdomNumber}-${kingdom.kingdomIsland}`;
                 const rec = ceasefire[key];
-                
-                // Only show if a ceasefire record exists AND it is currently active (remaining hours > 0)
-                if (!rec || !rec.isCeasefire) return false;
-                
-                const elapsedHours = (Date.now() - rec.timestamp) / (1000 * 3600);
-                const remainingHours = CEASEFIRE_HOURS - elapsedHours;
-                
-                return remainingHours > 0;
+
+                // Only show if a ceasefire record exists AND it is currently active (remaining ticks > 0)
+                const remainingTicks = getRemainingTicks(rec);
+                return remainingTicks > 0;
             }
 
             return true;
@@ -364,7 +367,7 @@ export default function Kingdoms() {
         // 1) Remaining ticks / hours for display
         const elapsedMs = nowMs - cfStartMs;
         const elapsedTicks = elapsedMs / MS_PER_TICK;            // 1 tick = 1 hour
-        const remainingTicks = CEASEFIRE_TICKS - elapsedTicks + 2;
+        const remainingTicks = getRemainingTicks(rec);
 
         console.log("elapsedMs:", elapsedMs);
         console.log("elapsedTicks:", elapsedTicks);
