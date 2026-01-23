@@ -12,6 +12,8 @@ const tools = [
   { href: '/parser', icon: 'War', title: 'War Target Assign', desc: 'To assign multiple specific target and assign to attackers to hit' },
   { href: '/CFPlanner', icon: 'CF', title: 'CF Planner', desc: ' Generate EOWCF schedule' },
   { href: '/formatter', icon: 'CE', title: 'Utopia News Formatter', desc: ' Generate war/province summary like Seraphim(dead)' },
+  { href: '/FinalChanges114', icon: 'AGE', title: 'Final Changes 114', desc: 'View Age 114 final changes.' },
+
 ];
 
 export default function Home() {
