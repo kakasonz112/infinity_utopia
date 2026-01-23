@@ -11,7 +11,7 @@
   background: rgba(8, 14, 35, 0.82);
   border: 1px solid var(--color-border);
   border-radius: 18px;
-  padding: clamp(1rem, 2.5vw, 1.75rem);
+  padding: clamp(0.9rem, 2.3vw, 1.5rem);
   box-shadow:
     0 20px 55px rgba(2, 6, 23, 0.75),
     0 0 0 1px rgba(124, 58, 237, 0.15);
@@ -25,10 +25,58 @@
   gap: 1.25rem;
 }
 
+.tabWrapper {
+  display: grid;
+  gap: 1rem;
+}
+
+.tabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: linear-gradient(120deg, rgba(12, 18, 36, 0.82), rgba(6, 12, 26, 0.82));
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.tabButton {
+  padding: 0.55rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-faded);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: all 140ms ease;
+  white-space: nowrap;
+}
+
+.tabButton:hover {
+  color: var(--color-text);
+  border-color: rgba(124, 58, 237, 0.35);
+  background: rgba(124, 58, 237, 0.12);
+}
+
+.tabButtonActive {
+  color: var(--color-text);
+  border-color: rgba(6, 182, 212, 0.45);
+  background: linear-gradient(120deg, rgba(6, 182, 212, 0.18), rgba(124, 58, 237, 0.18));
+  box-shadow: 0 6px 16px rgba(6, 182, 212, 0.18);
+}
+
+.tabPanel {
+  display: grid;
+  gap: 1rem;
+}
+
 .cardGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0.85rem;
 }
 
 .card {
@@ -277,5 +325,27 @@
 
   .section {
     padding: 0.9rem 0.85rem;
+  }
+
+  .tabBar {
+    gap: 0.35rem;
+  }
+
+  .tabButton {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
+  }
+
+  .sectionTitle {
+    font-size: 1rem;
+  }
+
+  .card {
+    padding: 0.8rem;
+  }
+
+  .cardGrid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
   }
 }
