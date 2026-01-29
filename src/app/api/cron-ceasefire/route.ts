@@ -51,8 +51,10 @@ export async function GET() {
   }
 
   // 3. Process current state
-  let ceasefire: CeasefireState = {};
+  const ceasefire: CeasefireState = {};
+  const existingIds = new Set<string>();
   (ceasefireRows as any[] || []).forEach((row) => {
+    existingIds.add(String(row.id));
     ceasefire[row.id] = {
       warsConcluded: row.wars_concluded,
       timestamp: Number(row.timestamp),
@@ -62,12 +64,21 @@ export async function GET() {
 
   const updates: CeasefireState = {};
 
+  const currentIds = new Set<string>();
   for (const k of kingdoms) {
     const key = `${k.kingdomNumber}-${k.kingdomIsland}`;
+    currentIds.add(key);
     const prev = ceasefire[key];
 
     if (!prev) {
       // First time seeing this kingdom: track warsConcluded, not yet in CF
+      updates[key] = {
+        warsConcluded: k.warsConcluded,
+        timestamp: 0,
+        isCeasefire: false,
+      };
+    } else if (k.warsConcluded < prev.warsConcluded) {
+      // Age reset (warsConcluded counter rolled over). Reset CF state.
       updates[key] = {
         warsConcluded: k.warsConcluded,
         timestamp: 0,
@@ -87,6 +98,19 @@ export async function GET() {
     } else {
       // No change in warsConcluded; keep existing record as-is.
       // No need to write it again, so skip adding to updates.
+    }
+  }
+
+  // 3b. Remove stale kingdoms that no longer exist in the dump
+  const staleIds = [...existingIds].filter((id) => !currentIds.has(id));
+  if (staleIds.length > 0) {
+    const { error: deleteError } = await supabase
+      .from("ceasefire")
+      .delete()
+      .in("id", staleIds);
+
+    if (deleteError) {
+      return NextResponse.json({ error: deleteError.message }, { status: 500 });
     }
   }
 
