@@ -46,14 +46,12 @@ type FilterBarProps = {
   biggestNetworth: number;
 };
 
-export default function FilterBar({ onFilterChange, onCfFilterChange, biggestLand, biggestNetworth }: FilterBarProps) {  const [filters, setFilters] = useState<Filters>({
+export default function FilterBar({ onFilterChange, onCfFilterChange, biggestLand, biggestNetworth }: FilterBarProps) {
+  const [filters, setFilters] = useState<Filters>({
     land: [500, roundToNearest100(biggestLand)], // Start at multiples of 10
     networth: [50000, roundToNearest50000(biggestNetworth)],
     provinces: [1, 25],
   });
-
-  console.log("bggestland:", biggestLand);
- console.log(" roundToNearest100 bggestland:", roundToNearest100(biggestLand));
   // NEW STATE: Ceasefire filter state
   const [cfFilter, setCfFilter] = useState<CfFilterType>("ALL");
 
@@ -90,38 +88,48 @@ export default function FilterBar({ onFilterChange, onCfFilterChange, biggestLan
 
   return (
     <div className={styles.filterBar}>
-    {/* 🛑 NEW: Ceasefire Filter Radio Buttons 🛑 */}
-      <div className={styles.label} style={{ marginBottom: '15px', borderBottom: '1px solid #ccc', paddingBottom: '10px' }}>
-          <span style={{ fontWeight: 'bold', marginRight: '15px' }}>Ceasefire Filter:</span>
-          <label style={{ marginRight: '15px' }}>
-              <input 
-                  type="radio" 
-                  name="cfFilter" 
-                  value="ALL" 
-                  checked={cfFilter === "ALL"} 
-                  onChange={() => setCfFilter("ALL")} 
-                  style={{ marginRight: '5px' }}
-              />
-              All Kingdoms
-          </label>
-          <label>
-              <input 
-                  type="radio" 
-                  name="cfFilter" 
-                  value="CF_ONLY" 
-                  checked={cfFilter === "CF_ONLY"} 
-                  onChange={() => setCfFilter("CF_ONLY")} 
-                  style={{ marginRight: '5px' }}
-              />
-              Ceasefire Only
-          </label>
+      <div className={styles.filterHeader}>
+        <div className={styles.filterTitle}>Filters</div>
+        <div className={styles.filterHint}></div>
       </div>
-      {/* Land Range */}
-      <label className={styles.label}>
-        Land Range:
-        <div className={styles.rangeContainer}>
-          <div className={styles.sliderWrapper}>
-            (Min)
+
+      <div className={styles.cfSection}>
+        <span className={styles.cfLabel}>Ceasefire Filter</span>
+        <div className={styles.cfOptions}>
+          <label className={styles.cfOption}>
+            <input
+              type="radio"
+              name="cfFilter"
+              value="ALL"
+              checked={cfFilter === "ALL"}
+              onChange={() => setCfFilter("ALL")}
+            />
+            <span>All Kingdoms</span>
+          </label>
+          <label className={styles.cfOption}>
+            <input
+              type="radio"
+              name="cfFilter"
+              value="CF_ONLY"
+              checked={cfFilter === "CF_ONLY"}
+              onChange={() => setCfFilter("CF_ONLY")}
+            />
+            <span>Ceasefire Only</span>
+          </label>
+        </div>
+      </div>
+
+      <div className={styles.rangeGroup}>
+        <div className={styles.rangeHeader}>
+          <span className={styles.rangeTitle}>Land Range</span>
+          <span className={styles.rangeValues}>
+            <span>Min {formatNumber(filters.land[0])}</span>
+            <span>Max {formatNumber(filters.land[1])}</span>
+          </span>
+        </div>
+        <div className={styles.sliderStack}>
+          <div className={styles.sliderLine}>
+            <span className={styles.sliderLabel}>Min</span>
             <input
               type="range"
               min="400"
@@ -133,7 +141,9 @@ export default function FilterBar({ onFilterChange, onCfFilterChange, biggestLan
               step="100"
               className={styles.rangeInput}
             />
-            (Max)
+          </div>
+          <div className={styles.sliderLine}>
+            <span className={styles.sliderLabel}>Max</span>
             <input
               type="range"
               min="400"
@@ -145,20 +155,21 @@ export default function FilterBar({ onFilterChange, onCfFilterChange, biggestLan
               step="100"
               className={styles.rangeInput}
             />
-          <div className={styles.rangeLabels}>
-            <span>{formatNumber(filters.land[0])}</span>
-            <span>{formatNumber(filters.land[1])}</span>
-          </div>
           </div>
         </div>
-      </label>
+      </div>
 
-      {/* Networth Range */}
-      <label className={styles.label}>
-        Networth Range:
-        <div className={styles.rangeContainer}>
-          <div className={styles.sliderWrapper}>
-          (Min)
+      <div className={styles.rangeGroup}>
+        <div className={styles.rangeHeader}>
+          <span className={styles.rangeTitle}>Networth Range</span>
+          <span className={styles.rangeValues}>
+            <span>Min {formatNumber(filters.networth[0])}</span>
+            <span>Max {formatNumber(filters.networth[1])}</span>
+          </span>
+        </div>
+        <div className={styles.sliderStack}>
+          <div className={styles.sliderLine}>
+            <span className={styles.sliderLabel}>Min</span>
             <input
               type="range"
               min="50000"
@@ -173,7 +184,9 @@ export default function FilterBar({ onFilterChange, onCfFilterChange, biggestLan
               step="50000"
               className={styles.rangeInput}
             />
-            (Max)
+          </div>
+          <div className={styles.sliderLine}>
+            <span className={styles.sliderLabel}>Max</span>
             <input
               type="range"
               min="50000"
@@ -188,56 +201,55 @@ export default function FilterBar({ onFilterChange, onCfFilterChange, biggestLan
               step="50000"
               className={styles.rangeInput}
             />
-            <div className={styles.rangeLabels}>
-              <span>{formatNumber(filters.networth[0])}</span>
-              <span>{formatNumber(filters.networth[1])}</span>
-            </div>
           </div>
         </div>
-      </label>
+      </div>
 
-      {/* Province Count */}
-      <label className={styles.label}>
-        Province Count:
-        <div className={styles.rangeContainer}>
-        <div className={styles.sliderWrapper}>
-        (Min)
-          <input
-            type="range"
-            min="1"
-            max="25"
-            value={filters.provinces[0]}
-            onChange={(e) =>
-              handleChange("provinces", [
-                Number(e.target.value),
-                filters.provinces[1],
-              ])
-            }
-            step="1"
-            className={styles.rangeInput}
-          />
-          (Max)
-          <input
-            type="range"
-            min="1"
-            max="25"
-            value={filters.provinces[1]}
-            onChange={(e) =>
-              handleChange("provinces", [
-                filters.provinces[0],
-                Number(e.target.value),
-              ])
-            }
-            step="1"
-            className={styles.rangeInput}
-          />
-          <div className={styles.rangeLabels}>
-            <span>{filters.provinces[0]}</span>
-            <span>{filters.provinces[1]}</span>
+      <div className={styles.rangeGroup}>
+        <div className={styles.rangeHeader}>
+          <span className={styles.rangeTitle}>Province Count</span>
+          <span className={styles.rangeValues}>
+            <span>Min {filters.provinces[0]}</span>
+            <span>Max {filters.provinces[1]}</span>
+          </span>
+        </div>
+        <div className={styles.sliderStack}>
+          <div className={styles.sliderLine}>
+            <span className={styles.sliderLabel}>Min</span>
+            <input
+              type="range"
+              min="1"
+              max="25"
+              value={filters.provinces[0]}
+              onChange={(e) =>
+                handleChange("provinces", [
+                  Number(e.target.value),
+                  filters.provinces[1],
+                ])
+              }
+              step="1"
+              className={styles.rangeInput}
+            />
+          </div>
+          <div className={styles.sliderLine}>
+            <span className={styles.sliderLabel}>Max</span>
+            <input
+              type="range"
+              min="1"
+              max="25"
+              value={filters.provinces[1]}
+              onChange={(e) =>
+                handleChange("provinces", [
+                  filters.provinces[0],
+                  Number(e.target.value),
+                ])
+              }
+              step="1"
+              className={styles.rangeInput}
+            />
           </div>
         </div>
-        </div>
-      </label>
+      </div>
     </div>
   );
 }

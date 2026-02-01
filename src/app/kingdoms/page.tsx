@@ -49,6 +49,11 @@ type CeasefireRecord = {
     isCeasefire: boolean;
 };
 
+type CeasefireApiResponse = {
+    lastUpdated?: string;
+    data?: { [key: string]: CeasefireRecord };
+};
+
 
 // --- Utopia Calendar Constants ---
 const UT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "June", "Jul"];
@@ -100,6 +105,7 @@ export default function Kingdoms() {
 
     // ---- Ceasefire tracking state ----
     const [ceasefire, setCeasefire] = useState<{ [key: string]: CeasefireRecord }>({});
+    const [ceasefireLastUpdated, setCeasefireLastUpdated] = useState<string>("");
     const [cfFilter, setCfFilter] = useState<CfFilterType>("ALL");
 
 
@@ -148,8 +154,22 @@ export default function Kingdoms() {
     // ---- Fetch ceasefire state ----
     useEffect(() => {
         fetch("/api/ceasefire")
-            .then(res => res.ok ? res.json() : {})
-            .then(setCeasefire);
+            .then(res => res.ok ? res.json() : null)
+            .then((payload: CeasefireApiResponse | null) => {
+                if (!payload) return;
+
+                if (payload.data) {
+                    setCeasefire(payload.data);
+                    if (payload.lastUpdated) {
+                        setCeasefireLastUpdated(payload.lastUpdated);
+                    }
+                    return;
+                }
+
+                // Backward-compat: if API returns raw map
+                setCeasefire(payload as { [key: string]: CeasefireRecord });
+                setCeasefireLastUpdated(new Date().toISOString());
+            });
     }, []);
 
     // Filter kingdoms (unchanged)
@@ -414,20 +434,28 @@ export default function Kingdoms() {
 
     return (
         <div className={styles.container}>
-            <h1 className={styles.heading}>Kingdom Data</h1>
+            <h1 className={styles.heading}>UTOPIA Kingdom Data</h1>
             <div className={styles.info}>
-                <p>
-                    <span>Start Date:</span>
-                    <LocalDisplay utcTimeString={data?.startDate ?? ""} />
-                </p>
-                <p>
-                    <span>End Date:</span>
-                    <LocalDisplay utcTimeString={data?.endDate ?? ""} />
-                </p>
-                <p>
-                    <span>Last Updated:</span>
-                    <LocalDisplay utcTimeString={data?.lastUpdated ?? ""} />
-                </p>
+                <div className={styles.infoColumn}>
+                    <p>
+                        <span>Start Date:</span>
+                        <LocalDisplay utcTimeString={data?.startDate ?? ""} />
+                    </p>
+                    <p>
+                        <span>End Date:</span>
+                        <LocalDisplay utcTimeString={data?.endDate ?? ""} />
+                    </p>
+                </div>
+                <div className={styles.infoColumn}>
+                    <p>
+                        <span>Last Updated:</span>
+                        <LocalDisplay utcTimeString={data?.lastUpdated ?? ""} />
+                    </p>
+                    <p>
+                        <span>CF Last Updated:</span>
+                        <LocalDisplay utcTimeString={ceasefireLastUpdated} />
+                    </p>
+                </div>
             </div>
             <FilterBar 
                 onFilterChange={handleFilterChange} 

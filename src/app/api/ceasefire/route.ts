@@ -31,7 +31,10 @@ export async function GET() {
       isCeasefire: !!row.is_ceasefire,
     };
   });
-  return NextResponse.json(state);
+  return NextResponse.json({
+    lastUpdated: new Date().toISOString(),
+    data: state,
+  });
 }
 
 export async function PATCH(req: Request) {

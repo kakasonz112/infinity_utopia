@@ -2,50 +2,150 @@
 
 /* Filter Bar */
 .filterBar {
-    margin: 20px auto;
-    padding: 20px;
-    border: 1px solid #444; /* dark-border-light */
-    border-radius: 8px;
-    background-color: #2d2d2d; /* dark-container-bg */
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4); /* Darker shadow */
-    width: 90%;
-    max-width: 1200px;
-    transition: box-shadow 0.3s ease;
-  }
+  margin: 20px auto;
+  padding: 20px;
+  border: 1px solid rgba(124, 58, 237, 0.18);
+  border-radius: 14px;
+  background: rgba(9, 16, 35, 0.85);
+  box-shadow: 0 18px 45px rgba(2, 6, 23, 0.55);
+  width: 90%;
+  max-width: 1200px;
+  transition: box-shadow 0.3s ease, border-color 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.filterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.filterTitle {
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #f8fbff;
+}
+
+.filterHint {
+  font-size: 0.9rem;
+  color: #9fb0d1;
+}
+
+.cfSection {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(124, 58, 237, 0.12);
+  border: 1px solid rgba(124, 58, 237, 0.2);
+}
+
+.cfLabel {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e9efff;
+}
+
+.cfOptions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cfOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(11, 18, 40, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #dbe6ff;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.cfOption input {
+  accent-color: #7c3aed;
+}
+
+.cfOption:hover {
+  border-color: rgba(124, 58, 237, 0.6);
+}
   
-  /* Range Container */
-  .rangeContainer {
-    display: flex;
-    flex-direction: column; /* Stack elements vertically */
-    width: 100%;
-    margin-bottom: 1rem;
-    gap: 5px;
-  }
-  
-  /* Wrapper for Slider and Labels */
-  .sliderWrapper {
-    display: flex;
-    align-items: center; /* Vertically center the slider and labels */
-    width: 100%;
-    position: relative; /* Important for absolute positioning of labels */
-    gap: 10px;
-  }
+.rangeGroup {
+  padding: 14px;
+  border-radius: 12px;
+  background: rgba(11, 18, 40, 0.85);
+  border: 1px solid rgba(124, 58, 237, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rangeHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.rangeTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f0f0f0;
+}
+
+.rangeValues {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+  color: #9fb0d1;
+}
+
+.sliderStack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sliderLine {
+  display: grid;
+  grid-template-columns: 42px 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.sliderLabel {
+  font-size: 0.8rem;
+  color: #9fb0d1;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
   
   /* Range Slider */
   .rangeInput {
-    width: 40%;       /* Controls the slider's width */
-    margin: 0.5rem 0;
-    background-color: #3c3c3c; /* dark-table-header-bg */
-    border-radius: 5px;
-    height: 12px;
-    -webkit-appearance: none;
-    appearance: none;
-    transition: background-color 0.3s ease;
-  }
+  width: 100%;
+  margin: 0.2rem 0;
+  background-color: rgba(124, 58, 237, 0.2);
+  border-radius: 999px;
+  height: 10px;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background-color 0.3s ease;
+}
   
   /* Range Slider Hover Effect */
   .rangeInput:hover {
-    background-color: #444;
+  background-color: rgba(124, 58, 237, 0.35);
   }
   
   /* Styling for Range Slider Thumb */
@@ -55,7 +155,7 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background-color: #4a90e2;
+    background-color: #7c3aed;
     cursor: pointer;
   }
   
@@ -63,42 +163,8 @@
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background-color: #4a90e2;
+    background-color: #7c3aed;
     cursor: pointer;
-  }
-  
-  /* Range Labels (Absolutely positioned) */
-  .rangeLabels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 14px;
-    color: #b0b0b0;
-    margin-top: 5px;
-    width: 40%; /* Same width as the slider */
-    position: absolute; /* Take out of the normal flow */
-    left: 0; /* Start at the left edge of .sliderWrapper */
-    top: 100%;    /*Position range labels below range input*/
-  }
-  
-  .rangeLabels span:first-child {
-      position: absolute;
-      left: 0;
-  }
-  .rangeLabels span:last-child {
-      position: absolute;
-      right: -20%;
-  }
-  
-  
-  /* Label Styling */
-  .label {
-    font-size: 1rem;
-    color: #f0f0f0;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    display: block;
-    margin-bottom: 50px;
-
   }
   
   /* Additional Media Queries for Responsiveness */
@@ -108,30 +174,17 @@
       padding: 15px;
     }
   
-    .rangeInput,
-    .rangeLabels {
-      width: 100%; /* Full width on smaller screens */
-    }
-  
-    .rangeContainer {
+    .filterHeader {
       flex-direction: column;
       align-items: flex-start;
     }
-  
-    .rangeLabels {
-      font-size: 12px;
-      position: relative; /*on smaller screen make position relative*/
-  
+
+    .rangeValues {
+      width: 100%;
+      justify-content: space-between;
     }
-    .rangeLabels span:first-child, .rangeLabels span:last-child {
-      position: static; /*on smaller screen make position relative*/
-  }
-  
-    .label {
-      font-size: 0.9rem;
-    }
-  
-    .sliderWrapper {
-      flex-direction: column;
+
+    .sliderLine {
+      grid-template-columns: 36px 1fr;
     }
   }

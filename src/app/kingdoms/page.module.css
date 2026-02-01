@@ -22,11 +22,18 @@
 }
  
 .info {
-    font-size: 1rem;
-    margin-bottom: 0.75rem;
     color: var(--color-text-faded);
+    align-items: start;
+    gap: 3rem;
     line-height: 1.6;
-    text-align: center;
+    display: flex;
+    justify-content: center;
+}
+
+.infoColumn {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
 }
  
 .info span {
@@ -157,6 +164,8 @@
  
     .info {
         font-size: 0.9rem;
+        grid-template-columns: 1fr;
+        text-align: left;
     }
  
     .kingdomsTable th,
