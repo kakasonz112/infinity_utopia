@@ -71,6 +71,39 @@ const COUNT_CATEGORIES = new Set([
   'Failed Attack',
 ]);
 
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function inferOurKdFromLines(lines: string[]) {
+  for (const line of lines) {
+    if (!/our\s+kingdom/i.test(line)) continue;
+    const m = line.match(/our\s+kingdom\s*\((\d+:\d+)\)/i);
+    if (m) return m[1];
+  }
+  return undefined;
+}
+
+function inferEnemyKdFromLines(lines: string[]) {
+  const patterns = [
+    /we\s+have\s+declared\s+WAR\s+on/i,
+    /has\s+declared\s+WAR\s+with\s+our\s+kingdom/i,
+    /against\s+us/i,
+    /targeted\s+at\s+us/i,
+    /ravaging\s+our\s+lands/i,
+    /our\s+kingdom\s+has\s+cancelled\s+the\s+dragon\s+project\s+to/i,
+    /our\s+kingdom\s+has\s+begun\s+the\s+.*dragon\s+project/i,
+    /our\s+kingdom\s+has\s+withdrawn\s+from\s+war\s+with/i,
+  ];
+
+  for (const line of lines) {
+    if (!patterns.some((p) => p.test(line))) continue;
+    const m = line.match(/\((\d+:\d+)\)/);
+    if (m) return m[1];
+  }
+  return undefined;
+}
+
 // Convert a date string like "May 8 of YR3" to a monotonic tick for sorting
 function parseTickFromLine(line: string): number | null {
   const m = line.match(/^([A-Za-z]+)\s+(\d+)\s+of\s+YR(\d+)/i);
@@ -128,8 +161,9 @@ function detailedSummaryUI(attacks: ParsedAttack[], lines: string[]) {
     if (a.defenderKd === OUR_KD) return true;
     const raw = (a.raw || "");
     if (raw.includes(`(${OUR_KD})`) && a.attackerKd !== OUR_KD) {
-      const attackerPattern = /\(\s*3:12\s*\)\s*(?:captured|invaded|attacked|attempted|set|sent)/i;
-      const defenderPattern = /(?:captured|invaded|attacked|attempted|razed|recaptured|ambush|killed|looted|pillag)[\s\S]*\(\s*3:12\s*\)/i;
+      const kdPattern = escapeRegExp(OUR_KD);
+      const attackerPattern = new RegExp(`\\(\\s*${kdPattern}\\s*\\)\\s*(?:captured|invaded|attacked|attempted|set|sent)`, "i");
+      const defenderPattern = new RegExp(`(?:captured|invaded|attacked|attempted|razed|recaptured|ambush|killed|looted|pillag)[\\s\\S]*\\(\\s*${kdPattern}\\s*\\)`, "i");
       if (defenderPattern.test(raw)) return true;
       if (!attackerPattern.test(raw) && /invaded|attacked|attempted|captured|razed|recaptured|ambush|killed|looted|pillag/i.test(raw)) return true;
     }
@@ -351,8 +385,9 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
     if (a.defenderKd === focalKd) return true;
     const raw = (a.raw || "");
     if (raw.includes(`(${focalKd})`) && a.attackerKd !== focalKd) {
-      const attackerPattern = /\(\s*3:12\s*\)\s*(?:captured|invaded|attacked|attempted|set|sent)/i;
-      const defenderPattern = /(?:captured|invaded|attacked|attempted|razed|recaptured|ambush|killed|looted|pillag)[\s\S]*\(\s*3:12\s*\)/i;
+      const kdPattern = escapeRegExp(focalKd);
+      const attackerPattern = new RegExp(`\\(\\s*${kdPattern}\\s*\\)\\s*(?:captured|invaded|attacked|attempted|set|sent)`, "i");
+      const defenderPattern = new RegExp(`(?:captured|invaded|attacked|attempted|razed|recaptured|ambush|killed|looted|pillag)[\\s\\S]*\\(\\s*${kdPattern}\\s*\\)`, "i");
       if (defenderPattern.test(raw)) return true;
       if (!attackerPattern.test(raw) && /invaded|attacked|attempted|captured|razed|recaptured|ambush|killed|looted|pillag/i.test(raw)) return true;
     }
@@ -608,7 +643,7 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
   const bodyLines: string[] = [];
   bodyLines.push("");
   bodyLines.push("** Summary **");
-  bodyLines.push(`Total attacks made: ${madeStats.overallCount} (${madeStats.overallAcres} acres)`);
+  bodyLines.push(`Total attacks made (${focalKd}): ${madeStats.overallCount} (${madeStats.overallAcres} acres)`);
   bodyLines.push(`-- Traditional march: ${madeStats.totals["Traditional March"].count} (${madeStats.totals["Traditional March"].acres} acres)`);
   bodyLines.push(`-- Ambush: ${madeStats.totals["Ambush"].count} (${madeStats.totals["Ambush"].acres} acres)`);
   bodyLines.push(`-- Conquest: ${madeStats.totals["Conquest"].count} (${madeStats.totals["Conquest"].acres} acres)`);
@@ -624,7 +659,7 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
   bodyLines.push(`-- Enemy Dragons Killed: ${eventStats.enemyDragonsKilled}`);
   bodyLines.push(`-- Rituals Started: ${eventStats.ritualsStartedUs}`);
   bodyLines.push(`-- Rituals Completed: ${eventStats.ritualsCompletedUs}`);
-  bodyLines.push(`\nTotal attacks suffered: ${sufStats.overallCount} (${sufStats.overallAcres} acres)`);
+  bodyLines.push(`\nTotal attacks suffered (${focalKd}): ${sufStats.overallCount} (${sufStats.overallAcres} acres)`);
   bodyLines.push(`-- Traditional march: ${sufStats.totals["Traditional March"].count} (${sufStats.totals["Traditional March"].acres} acres)`);
   bodyLines.push(`-- Ambush: ${sufStats.totals["Ambush"].count} (${sufStats.totals["Ambush"].acres} acres)`);
   bodyLines.push(`-- Raze: ${sufStats.totals["Raze"].count} (${sufStats.totals["Raze"].acres} acres)`);
@@ -1175,6 +1210,14 @@ const Next15: React.FC = () => {
     const parsedAttacks: ParsedAttack[] = [];
     let lastTick = 0; // monotonic hour-like counter
     const perDateSeq: Record<number, number> = {};
+    const kdOrder: Record<string, number> = {};
+    let kdIndex = 0;
+    const noteKd = (kd?: string) => {
+      if (!kd) return;
+      if (kdOrder[kd] === undefined) {
+        kdOrder[kd] = kdIndex++;
+      }
+    };
     for (const entry of sortedEntries) {
       const parsed = parseLineToAttack(entry.line);
       if (parsed) {
@@ -1188,6 +1231,8 @@ const Next15: React.FC = () => {
         }
         lastTick = tickVal;
         (parsed as any)._tick = tickVal;
+        noteKd(parsed.attackerKd);
+        noteKd(parsed.defenderKd);
         parsedAttacks.push(parsed);
       }
     }
@@ -1209,17 +1254,22 @@ const Next15: React.FC = () => {
     const kdEntries = Object.entries(kdCounts).sort((a, b) => {
       if (b[1].def !== a[1].def) return b[1].def - a[1].def; // prefer who got hit most as our kd
       if (b[1].total !== a[1].total) return b[1].total - a[1].total;
-      return a[0].localeCompare(b[0]);
+      if (b[1].atk !== a[1].atk) return b[1].atk - a[1].atk;
+      const ao = kdOrder[a[0]] ?? Number.MAX_SAFE_INTEGER;
+      const bo = kdOrder[b[0]] ?? Number.MAX_SAFE_INTEGER;
+      return ao - bo;
     });
 
-    const inferredOur = kdEntries[0]?.[0];
-    const inferredEnemy = kdEntries.find(([k]) => k !== inferredOur)?.[0];
+    const explicitEnemy = inferEnemyKdFromLines(rawLines);
+    const explicitOur = inferOurKdFromLines(rawLines);
+    const inferredOur = explicitOur || kdEntries.find(([k]) => k !== explicitEnemy)?.[0];
+    const inferredEnemy = explicitEnemy || kdEntries.find(([k]) => k !== inferredOur)?.[0];
 
     const ourInput = (ourKdInput || "").trim();
     const enemyInput = (enemyKdInput || "").trim();
 
-    OUR_KD = inferredOur || ourInput || "3:12";
-    ENEMY_KD = inferredEnemy || enemyInput || inferredOur || "6:7";
+    OUR_KD = ourInput || inferredOur || "3:12";
+    ENEMY_KD = enemyInput || inferredEnemy || "6:7";
 
     // Recompute isOutgoing and drop duplicate outgoing lines now that OUR_KD is set
     const attacks: ParsedAttack[] = [];
