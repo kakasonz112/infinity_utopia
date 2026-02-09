@@ -224,8 +224,8 @@ export function parseProvinceNews(rawText: string) {
     m = ev.match(/(\d+) of our troops were found dead today/i);
     if (m) { ag.troop_deaths_found += num(m[1]); log.push(`Nightstrike: ${num(m[1])} troops killed`); continue }
 
-    // Battle/raid lines
-    if (/^Forces from/i.test(ev)) {
+    // Battle/raid lines (massacres and land captures)
+    if (/Forces from/i.test(ev)) {
       const mm = ev.match(/Forces from\s+(.+?)\s+came through and ravaged our lands! Their armies killed\s+([\d,]+)\s+of our peasants, thieves, and wizards! We lost\s+(.+)/i);
       if (mm) {
         const attacker = mm[1].trim();
@@ -253,6 +253,34 @@ export function parseProvinceNews(rawText: string) {
         ag.raids.push({ date, attacker, civKilled, unitLosses });
         // Log incoming massacre with civilian casualties
         log.push(`Incoming massacre from ${attacker}: ${civKilled} peasants killed`);
+        continue;
+      }
+
+      const mc = ev.match(/Forces from\s+(.+?)\s+came through and ravaged our lands!\s*They captured\s+([\d,]+)\s+acres!?\s*(?:We lost\s+(.+))?/i);
+      if (mc) {
+        const attacker = mc[1].trim();
+        const acres = num(mc[2]);
+        ag.land_lost += acres;
+        const unitLosses: any = {};
+        const lostPart = (mc[3] || '').trim();
+        if (lostPart) {
+          const pieces = lostPart.replace(/ and /gi, ', ').split(',').map(s=>s.trim()).filter(Boolean);
+          for (const p of pieces) {
+            const m2 = p.match(/([\d,]+)\s+([A-Za-z ]+)/);
+            if (!m2) continue;
+            const n = num(m2[1]);
+            const unit = m2[2].toLowerCase();
+            unitLosses[unit] = (unitLosses[unit]||0)+n;
+            if (unit.includes('soldier')) ag.unit_losses.soldiers += n;
+            else if (unit.includes('quickblade')) ag.unit_losses.quickblades += n;
+            else if (unit.includes('pikeman')||unit.includes('pikemen')) ag.unit_losses.pikemen += n;
+            else if (unit.includes('golem')) ag.unit_losses.golems += n;
+            else ag.unit_losses.others[unit] = (ag.unit_losses.others[unit]||0)+n;
+          }
+        }
+        recordTop(date, `Raid by ${attacker}`, acres);
+        ag.raids.push({ date, attacker, civKilled: 0, unitLosses, acres });
+        log.push(`Incoming raid from ${attacker}: ${acres} acres lost`);
         continue;
       }
     }

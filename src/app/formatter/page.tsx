@@ -56,10 +56,17 @@ type SummaryResult = {
 let OUR_KD = "3:12";
 let ENEMY_KD = "6:7";
 
-// Hours used for unique counting window (shared single definition)
-const UNIQUE_WINDOW_HOURS = 5;
+// Default attack windows (hours)
+const WAR_ATTACK_HOURS = 11.9;
+const PREWAR_ATTACK_HOURS = 14;
 
-// Categories that count toward made/suffered tallies
+// Minimum ticks between uniques
+const MIN_UNIQUE_TICKS = 2;
+
+// Hours used for unique counting window (shared single definition)
+let UNIQUE_WINDOW_HOURS = WAR_ATTACK_HOURS;
+
+// Categories that count toward made/suffered tallies 
 const COUNT_CATEGORIES = new Set([
   'Traditional March',
   'Ambush',
@@ -104,6 +111,18 @@ function inferEnemyKdFromLines(lines: string[]) {
   return undefined;
 }
 
+function inferAttackWindowHours(lines: string[]) {
+  const warRegex = /declared\s+WAR|has\s+declared\s+WAR|we\s+have\s+declared\s+WAR|WAR\s+with\s+our\s+kingdom/i;
+  if (lines.some((l) => warRegex.test(l))) return WAR_ATTACK_HOURS;
+  return PREWAR_ATTACK_HOURS;
+}
+
+function getUniqueTick(a: ParsedAttack) {
+  const parsed = parseTickFromLine(a.date);
+  if (parsed != null) return parsed;
+  return (a as any)._tickUnique ?? (a as any)._tick ?? 0;
+}
+
 // Convert a date string like "May 8 of YR3" to a monotonic tick for sorting
 function parseTickFromLine(line: string): number | null {
   const m = line.match(/^([A-Za-z]+)\s+(\d+)\s+of\s+YR(\d+)/i);
@@ -132,19 +151,29 @@ function normalizeProvKey(raw: string | undefined) {
 // Compute uniques for a kingdom based on attacker provinces using a window (hours)
 // Ambush does not consume a unique per spec.
 function computeUniquesByAttacker(attacks: ParsedAttack[], kd: string, windowHours: number) {
-  const lastByAttacker: Record<string, number> = {};
-  const countByAttacker: Record<string, number> = {};
+  const windowTicks = Math.max(MIN_UNIQUE_TICKS, Math.ceil(windowHours / 24));
+  const byProv: Record<string, Array<{ tick: number }>> = {};
+
   for (const a of attacks) {
     if (a.attackerKd !== kd) continue;
     if (a.category === "Ambush") continue;
-    const tick = (a as any)._tick || 0;
     const key = (normalizeProvKey(a.attackerProv) || a.attackerProv || "An unknown Province").toString();
-    const last = lastByAttacker[key];
-    if (last === undefined || (tick - last) >= windowHours) {
-      countByAttacker[key] = (countByAttacker[key] || 0) + 1;
-      lastByAttacker[key] = tick;
+    if (!byProv[key]) byProv[key] = [];
+    byProv[key].push({ tick: getUniqueTick(a) });
+  }
+
+  const countByAttacker: Record<string, number> = {};
+  for (const [key, items] of Object.entries(byProv)) {
+    items.sort((a, b) => a.tick - b.tick);
+    let lastTick: number | undefined = undefined;
+    for (const it of items) {
+      if (lastTick === undefined || (it.tick - lastTick) >= windowTicks) {
+        countByAttacker[key] = (countByAttacker[key] || 0) + 1;
+        lastTick = it.tick;
+      }
     }
   }
+
   const total = Object.values(countByAttacker).reduce((s, v) => s + v, 0);
   const entries = Object.entries(countByAttacker).sort((a, b) => b[1] - a[1]);
   return { total, entries };
@@ -172,16 +201,23 @@ function detailedSummaryUI(attacks: ParsedAttack[], lines: string[]) {
 
   const { total: uniqMadeCount } = computeUniquesByAttacker(attacks, OUR_KD, UNIQUE_WINDOW_HOURS);
   // For suffered, count uniques by incoming attacker provinces (any kd) hitting us, excluding ambush
-  const lastTickSuf: Record<string, number> = {};
   let uniqSufCount = 0;
+  const effectiveSufferedWindow = Math.max(MIN_UNIQUE_TICKS, Math.ceil(UNIQUE_WINDOW_HOURS / 24));
+  const sufByProv: Record<string, Array<{ tick: number }>> = {};
   for (const a of attacks) {
     if (a.defenderKd === OUR_KD && a.category !== "Ambush") {
       const key = (normalizeProvKey(a.attackerProv) || a.attackerProv || "An unknown Province").toString();
-      const lastT = lastTickSuf[key];
-      const tick = (a as any)._tick || 0;
-      if (lastT === undefined || (tick - lastT) >= UNIQUE_WINDOW_HOURS) {
+      if (!sufByProv[key]) sufByProv[key] = [];
+      sufByProv[key].push({ tick: getUniqueTick(a) });
+    }
+  }
+  for (const items of Object.values(sufByProv)) {
+    items.sort((a, b) => a.tick - b.tick);
+    let lastTick: number | undefined = undefined;
+    for (const it of items) {
+      if (lastTick === undefined || (it.tick - lastTick) >= effectiveSufferedWindow) {
         uniqSufCount++;
-        lastTickSuf[key] = tick;
+        lastTick = it.tick;
       }
     }
   }
@@ -439,16 +475,23 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
   // WINDOW uniques by attacker province (ambush excluded)
   const { total: uniqMadeCount, entries: uniqMadeEntries } = computeUniquesByAttacker(attacks, focalKd, UNIQUE_WINDOW_HOURS);
   // Suffered uniques: attackers (any kd) hitting focalKd, ambush excluded
-  const sufLastByAttacker: Record<string, number> = {};
   const sufCountByAttacker: Record<string, number> = {};
+  const effectiveSufWindow = Math.max(MIN_UNIQUE_TICKS, Math.ceil(UNIQUE_WINDOW_HOURS / 24));
+  const sufByProv: Record<string, Array<{ tick: number }>> = {};
   for (const a of attacks) {
     if (a.defenderKd === focalKd && a.category !== "Ambush") {
-      const tick = (a as any)._tick || 0;
       const key = (normalizeProvKey(a.attackerProv) || a.attackerProv || 'An unknown Province').toString();
-      const last = sufLastByAttacker[key];
-      if (last === undefined || (tick - last) >= UNIQUE_WINDOW_HOURS) {
+      if (!sufByProv[key]) sufByProv[key] = [];
+      sufByProv[key].push({ tick: getUniqueTick(a) });
+    }
+  }
+  for (const [key, items] of Object.entries(sufByProv)) {
+    items.sort((a, b) => a.tick - b.tick);
+    let lastTick: number | undefined = undefined;
+    for (const it of items) {
+      if (lastTick === undefined || (it.tick - lastTick) >= effectiveSufWindow) {
         sufCountByAttacker[key] = (sufCountByAttacker[key] || 0) + 1;
-        sufLastByAttacker[key] = tick;
+        lastTick = it.tick;
       }
     }
   }
@@ -638,7 +681,7 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
     hoursText = `${tickDiff+1} hours`;
   }
 
-  const header = `** Kingdom news report **\nFor the time from ${timeWindowFrom} till ${timeWindowTo} - ${hoursText}`;
+  const header = `~~ Made by Infinity Utopia\n** Kingdom news report **\nFor the time from ${timeWindowFrom} till ${timeWindowTo} - ${hoursText}`;
 
   const bodyLines: string[] = [];
   bodyLines.push("");
@@ -670,7 +713,7 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
   bodyLines.push(`-- Bounces: ${eventStats.bouncesSuf}`);
   bodyLines.push(`-- Dragons Started: ${eventStats.dragonStartEnemy}`);
   bodyLines.push(`-- Dragons Completed: ${eventStats.dragonCompletedEnemy}`);
-  bodyLines.push(`\n`);
+  bodyLines.push(``);
 
   function formatKingdomSection(kd: string, entries: { prov: string; acres: number; times: number; made?: number; suffered?: number }[]) {
     const display = entries.filter((e) => {
@@ -711,44 +754,74 @@ function detailedReportUI(attacks: ParsedAttack[], lines: string[]) {
     bodyLines.push("");
   }
 
-  // 5-hour unique breakdown per kingdom (attacker provinces only, ambush excluded)
-  const computeUniquesEntriesForKd = (kd: string) => {
-    const lastByProv: Record<string, number> = {};
+  // Unique breakdown per kingdom (attacker provinces only, ambush excluded)
+  const computeUniquesDetailsForKd = (kd: string) => {
     const countByProv: Record<string, number> = {};
+    const uniqueDatesByProv: Record<string, string[]> = {};
+    const allDatesByProv: Record<string, string[]> = {};
+    const effectiveWindow = Math.max(MIN_UNIQUE_TICKS, Math.ceil(UNIQUE_WINDOW_HOURS / 24));
+    const byProv: Record<string, Array<{ tick: number; date?: string }>> = {};
+
     for (const a of attacks) {
       if (a.attackerKd !== kd) continue;
       if (a.category === "Ambush") continue;
-      const tick = (a as any)._tick || 0;
       const key = (normalizeProvKey(a.attackerProv) || a.attackerProv || 'An unknown Province').toString();
-      const last = lastByProv[key];
-      if (last === undefined || (tick - last) >= UNIQUE_WINDOW_HOURS) {
-        countByProv[key] = (countByProv[key] || 0) + 1;
-        lastByProv[key] = tick;
+      if (!byProv[key]) byProv[key] = [];
+      byProv[key].push({ tick: getUniqueTick(a), date: a.date });
+    }
+
+    for (const [key, items] of Object.entries(byProv)) {
+      items.sort((a, b) => a.tick - b.tick);
+      allDatesByProv[key] = items.map((i) => i.date).filter(Boolean) as string[];
+      let lastTick: number | undefined = undefined;
+      for (const it of items) {
+        if (lastTick === undefined || (it.tick - lastTick) >= effectiveWindow) {
+          countByProv[key] = (countByProv[key] || 0) + 1;
+          lastTick = it.tick;
+          if (!uniqueDatesByProv[key]) uniqueDatesByProv[key] = [];
+          if (it.date) uniqueDatesByProv[key].push(it.date);
+        }
       }
     }
-    return Object.entries(countByProv).sort((a, b) => b[1] - a[1]);
+
+    const entries = Object.entries(countByProv)
+      .map(([prov, count]) => ({
+        prov,
+        count,
+        allDates: allDatesByProv[prov] || [],
+        uniqueDates: uniqueDatesByProv[prov] || [],
+      }))
+      .sort((a, b) => b.count - a.count);
+    return entries;
   };
 
-  const uniquesForUs = computeUniquesEntriesForKd(focalKd);
-  const uniquesForUsTotal = uniquesForUs.reduce((s, [, v]) => s + v, 0);
+  const uniquesForUs = computeUniquesDetailsForKd(focalKd);
+  const uniquesForUsTotal = uniquesForUs.reduce((s, e) => s + e.count, 0);
   (madeStats as any).uniques = uniquesForUsTotal;
 
-  bodyLines.push("");
   bodyLines.push("** Uniques for " + focalKd + " **");
-  for (const [prov, cnt] of uniquesForUs) {
-    bodyLines.push(`${prov} - ${cnt}`);
+  for (const e of uniquesForUs) {
+    const allDates = e.allDates.length ? ` [${e.allDates.join(", ")}]` : "";
+    const uniqueDates = e.uniqueDates.length ? ` [${e.uniqueDates.join(", ")}]` : "";
+    bodyLines.push(`${e.prov} - ${e.count}`);
+    // bodyLines.push(`  all attacks:${allDates}`);
+    bodyLines.push(`  uniques:${uniqueDates}`);
   }
 
   const enemyKd = otherKds[0] || ENEMY_KD;
-  const uniquesForEnemy = computeUniquesEntriesForKd(enemyKd);
-  const uniquesForEnemyTotal = uniquesForEnemy.reduce((s, [, v]) => s + v, 0);
+  const uniquesForEnemy = computeUniquesDetailsForKd(enemyKd);
+  const uniquesForEnemyTotal = uniquesForEnemy.reduce((s, e) => s + e.count, 0);
   (sufStats as any).uniques = uniquesForEnemyTotal;
 
   if (uniquesForEnemy.length > 0) {
     bodyLines.push("");
     bodyLines.push("** Uniques for " + enemyKd + " **");
-    for (const [prov, cnt] of uniquesForEnemy) {
-      bodyLines.push(`${prov} - ${cnt}`);
+    for (const e of uniquesForEnemy) {
+      const allDates = e.allDates.length ? ` [${e.allDates.join(", ")}]` : "";
+      const uniqueDates = e.uniqueDates.length ? ` [${e.uniqueDates.join(", ")}]` : "";
+      bodyLines.push(`${e.prov} - ${e.count}`);
+      // bodyLines.push(`  all attacks:${allDates}`);
+      bodyLines.push(`  uniques:${uniqueDates}`);
     }
   }
 
@@ -1203,6 +1276,7 @@ const Next15: React.FC = () => {
       return;
     }
     const rawLines = input.split(/\r?\n/).filter((l) => l.trim().length > 0);
+    UNIQUE_WINDOW_HOURS = inferAttackWindowHours(rawLines);
     const sortedEntries = rawLines
       .map((line, idx) => ({ line, idx, tick: parseTickFromLine(line) ?? Number.POSITIVE_INFINITY }))
       .sort((a, b) => (a.tick === b.tick ? a.idx - b.idx : a.tick - b.tick));
@@ -1222,15 +1296,19 @@ const Next15: React.FC = () => {
       const parsed = parseLineToAttack(entry.line);
       if (parsed) {
         let tickVal: number;
+        let uniqueTick: number;
         if (Number.isFinite(entry.tick)) {
           const baseHours = (entry.tick as number) * 24; // convert day tick to hour scale
           const seq = (perDateSeq[entry.tick as number] = (perDateSeq[entry.tick as number] || 0) + 1);
           tickVal = baseHours + (seq - 1);
+          uniqueTick = entry.tick as number;
         } else {
           tickVal = lastTick + 1; // fallback strictly increasing
+          uniqueTick = tickVal;
         }
         lastTick = tickVal;
         (parsed as any)._tick = tickVal;
+        (parsed as any)._tickUnique = uniqueTick;
         noteKd(parsed.attackerKd);
         noteKd(parsed.defenderKd);
         parsedAttacks.push(parsed);
