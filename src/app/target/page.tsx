@@ -506,6 +506,17 @@ export default function KingdomTargetMatcher() {
   const [matchSets, setMatchSets] = useState<MatchSet[]>([]);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isComputing, setIsComputing] = useState(false);
+  const [excludedRaces, setExcludedRaces] = useState<Set<string>>(new Set());
+  const [excludedProvs, setExcludedProvs] = useState<Province[]>([]);
+
+  const toggleRace = (race: string) => {
+    setExcludedRaces((prev) => {
+      const next = new Set(prev);
+      if (next.has(race)) next.delete(race);
+      else next.add(race);
+      return next;
+    });
+  };
 
   const computeMatches = () => {
     if (isComputing) return;
@@ -514,8 +525,12 @@ export default function KingdomTargetMatcher() {
     setCopiedKey(null);
 
     window.setTimeout(() => {
-      const own = parseKingdom(ownInput);
+      const allOwn = parseKingdom(ownInput);
       const enemy = parseKingdom(enemyInput);
+
+      const excluded = allOwn.filter((p) => excludedRaces.has(p.race));
+      const own = allOwn.filter((p) => !excludedRaces.has(p.race));
+      setExcludedProvs(excluded);
 
       const sets = computeMatchSets(own, enemy);
       setMatchSets(sets);
@@ -557,12 +572,28 @@ COPY FORMAT from ENEMY KINGDOM PAGE:
         />
       </div>
 
+      <div className={styles.raceFilter}>
+        <span className={styles.raceFilterLabel}>Exclude own races (T/M):</span>
+        <div className={styles.raceCheckboxes}>
+          {RACES.map((race) => (
+            <label key={race} className={styles.raceCheckbox}>
+              <input
+                type="checkbox"
+                checked={excludedRaces.has(race)}
+                onChange={() => toggleRace(race)}
+              />
+              {race}
+            </label>
+          ))}
+        </div>
+      </div>
+
       <button
         className={styles.button}
         onClick={computeMatches}
         disabled={isComputing}
       >
-        {isComputing ? "Generating Targets..." : "Compute Targets"}
+        {isComputing ? "Assigning Targets..." : "Assign Targets"}
       </button>
 
       {isComputing && (
@@ -574,6 +605,31 @@ COPY FORMAT from ENEMY KINGDOM PAGE:
 
       {matchSets.length > 0 && (
         <div className={styles.accordion}>
+          {excludedProvs.length > 0 && (
+            <div className={styles.sectionBlock}>
+              <h2 className={styles.sectionTitle}>Excluded Own Provinces (T/M)</h2>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Slot</th>
+                    <th>Province</th>
+                    <th>Race</th>
+                    <th>NW</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {excludedProvs.map((p) => (
+                    <tr key={p.slot}>
+                      <td>{`#${p.slot}`}</td>
+                      <td>{p.name}</td>
+                      <td>{p.race}</td>
+                      <td>{p.nw.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
           <div className={styles.sectionBlock}>
             <h2 className={styles.sectionTitle}>Best Combinations</h2>
             {(() => {

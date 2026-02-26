@@ -330,6 +330,42 @@
   }
 }
 
+.raceFilter {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #333;
+  border-radius: 10px;
+  background: #1a1a1d;
+}
+
+.raceFilterLabel {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 0.5rem;
+}
+
+.raceCheckboxes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+}
+
+.raceCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: #e2e8f0;
+  cursor: pointer;
+}
+
+.raceCheckbox input[type="checkbox"] {
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
 
 
 /* =============================
