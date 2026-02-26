@@ -57,7 +57,7 @@ type MatchSet = {
 // valid race list
 const RACES = [
   "Avian",
-  "Dark",
+  "Dark Elf",
   "Elf",
   "Dwarf",
   "Faery",
