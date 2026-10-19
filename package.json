@@ -6,12 +6,13 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:firebase": "node tools/test_firebase.cjs"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
-    "@supabase/supabase-js": "^2.84.0",
     "firebase": "^11.6.1",
+    "firebase-admin": "^13.10.0",
     "moment-timezone": "^0.5.47",
     "next": "^15.5.7",
     "react": "^19.2.1",

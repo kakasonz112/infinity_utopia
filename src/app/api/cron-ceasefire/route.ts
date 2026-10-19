@@ -1,27 +1,15 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { readCeasefire, writeCeasefire, type CeasefireState } from "@/lib/ceasefireStore";
 
 export const maxDuration = 30;
 
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 type UtopiaKingdom = {
   kingdomNumber: number;
   kingdomIsland: number;
   warsConcluded: number;
-};
-
-type CeasefireRecord = {
-  warsConcluded: number;
-  timestamp: number;
-  isCeasefire: boolean;
-};
-
-type CeasefireState = {
-  [key: string]: CeasefireRecord;
 };
 
 // 1 tick = 1 real hour
@@ -34,7 +22,10 @@ function prevTickStart(nowMs: number): number {
   return currentTickStart - MS_PER_TICK;
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     // 1. Fetch kingdoms data with a hard timeout so the cron doesn't hang.
     const controller = new AbortController();
@@ -55,28 +46,14 @@ export async function GET() {
     }
 
     const kingdomsJson = await res.json();
-    const kingdoms: UtopiaKingdom[] = kingdomsJson.kingdoms || [];
-
-    // 2. Supabase read
-    const { data: ceasefireRows, error } = await supabase
-      .from("ceasefire")
-      .select("id,wars_concluded,timestamp,is_ceasefire");
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    const kingdoms: UtopiaKingdom[] = kingdomsJson.kingdoms;
+    if (!Array.isArray(kingdoms) || kingdoms.length === 0 || kingdoms.some((k) =>
+      !Number.isInteger(k.kingdomNumber) || !Number.isInteger(k.kingdomIsland) ||
+      !Number.isInteger(k.warsConcluded) || k.warsConcluded < 0)) {
+      return NextResponse.json({ error: "Invalid or empty kingdoms dump" }, { status: 502 });
     }
-
-    // 3. Process current state
-    const ceasefire: CeasefireState = {};
-    const existingIds = new Set<string>();
-    (ceasefireRows as any[] || []).forEach((row) => {
-      existingIds.add(String(row.id));
-      ceasefire[row.id] = {
-        warsConcluded: row.wars_concluded,
-        timestamp: Number(row.timestamp),
-        isCeasefire: !!row.is_ceasefire,
-      };
-    });
+    const ceasefire = await readCeasefire();
+    const existingIds = new Set(Object.keys(ceasefire));
 
     const updates: CeasefireState = {};
 
@@ -116,48 +93,19 @@ export async function GET() {
 
     // 3b. Remove stale kingdoms that no longer exist in the dump
     const staleIds = [...existingIds].filter((id) => !currentIds.has(id));
-    if (staleIds.length > 0) {
-      const { error: deleteError } = await supabase
-        .from("ceasefire")
-        .delete()
-        .in("id", staleIds);
-
-      if (deleteError) {
-        return NextResponse.json({ error: deleteError.message }, { status: 500 });
-      }
-    }
-
-    // 4. Early return if nothing to update
+    await writeCeasefire(updates, staleIds);
     const entries = Object.entries(updates);
-    if (entries.length === 0) {
-      return NextResponse.json({ success: true, updated: 0 });
-    }
-
-    // 5. Bulk upsert changed kingdoms in a single request to avoid fanout latency.
-    const upsertPayload = entries.map(([key, value]) => ({
-      id: key,
-      wars_concluded: value.warsConcluded,
-      timestamp: value.timestamp,
-      is_ceasefire: value.isCeasefire,
-    }));
-
-    const { error: upsertError } = await supabase
-      .from("ceasefire")
-      .upsert(upsertPayload, { onConflict: "id" });
-
-    if (upsertError) {
-      return NextResponse.json(
-        { error: `Upsert errors: ${upsertError.message}` },
-        { status: 500 }
-      );
-    }
 
     return NextResponse.json({
       success: true,
       updated: entries.length,
+      deleted: staleIds.length,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+
+// External schedulers can use GET or POST.
+export const POST = GET;

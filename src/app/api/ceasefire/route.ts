@@ -1,69 +1,41 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { readCeasefire, writeCeasefire, type CeasefireState } from "@/lib/ceasefireStore";
 
-// For server-side secrets
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
-type CeasefireState = {
-  [key: string]: {
-    warsConcluded: number;  
-    timestamp: number;
-    isCeasefire: boolean;
-  };
-};
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const { data, error } = await supabase
-    .from("ceasefire")
-    .select("*");
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    return NextResponse.json({ lastUpdated: new Date().toISOString(), data: await readCeasefire() });
+  } catch (error) {
+    console.error("Failed to read ceasefire state", error);
+    return NextResponse.json({ error: "Failed to read ceasefire state" }, { status: 500 });
   }
-
-  let state: CeasefireState = {};
-  (data as any[] || []).forEach(row => {
-    state[row.id as string] = {
-      warsConcluded: row.wars_concluded as number,
-      timestamp: Number(row.timestamp),
-      isCeasefire: !!row.is_ceasefire,
-    };
-  });
-  return NextResponse.json({
-    lastUpdated: new Date().toISOString(),
-    data: state,
-  });
 }
 
 export async function PATCH(req: Request) {
-  const updates = await req.json() as CeasefireState;
-
-  const upserts = Object.entries(updates).map(([key, value]) =>
-    supabase
-      .from("ceasefire")
-      .upsert(
-        {
-          id: key,
-          wars_concluded: value.warsConcluded,
-          timestamp: value.timestamp,
-          is_ceasefire: value.isCeasefire,
-        },
-        { onConflict: "id" }
-      )
-  );
-
-  const results = await Promise.all(upserts);
-
-  const hasError = results.some(r => r && r.error);
-  const messages = results
-    .filter(r => r && r.error)
-    .map(r => r!.error!.message)
-    .join("; ");
-
-  if (hasError) {
-    return NextResponse.json({ error: `Upsert errors: ${messages}` }, { status: 500 });
+  if (!process.env.CRON_SECRET || req.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  return NextResponse.json({ success: true });
+  let updates: CeasefireState;
+  try {
+    updates = await req.json();
+    if (!updates || typeof updates !== "object" || Array.isArray(updates) ||
+      Object.entries(updates).some(([id, value]) =>
+        !/^\d+-\d+$/.test(id) || !value ||
+        !Number.isInteger(value.warsConcluded) || value.warsConcluded < 0 ||
+        !Number.isFinite(value.timestamp) || value.timestamp < 0 ||
+        typeof value.isCeasefire !== "boolean")) {
+      return NextResponse.json({ error: "Invalid ceasefire state" }, { status: 400 });
+    }
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  try {
+    await writeCeasefire(updates);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("Failed to update ceasefire state", error);
+    return NextResponse.json({ error: "Failed to update ceasefire state" }, { status: 500 });
+  }
 }
