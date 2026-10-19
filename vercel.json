@@ -1,12 +1,2 @@
 {
-  "crons": [
-    {
-      "path": "/api/cron-ceasefire",
-      "schedule": "*/10 * * * *"
-    },
-    {
-      "path": "/api/supabase-keepalive",
-      "schedule": "0 3 * * *"
-    }
-  ]
 }
