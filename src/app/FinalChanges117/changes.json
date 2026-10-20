@@ -1,0 +1,446 @@
+{
+  "general": [
+    "Fanaticism spell will only be available as a Racial Spell",
+    "% Reduction Sciences Max Reductions Reduced from -95% to -75% (Bookkeeping, Artisan, Resilience, Shielding, Finesse)",
+    "All Doctrines give double bonus for the first province, then scale by the listed amount for each province up to the Max",
+    "Dragon Hitpoints Reduced by 10% to accomodate for lower Elite values, Recurring effects after 6 ticks have been removed"
+  ],
+  "races": [
+    {
+      "name": "Avian",
+      "archetype": "Speed and Birth Rates",
+      "bonuses": [
+        "-20% Attack Travel Time",
+        "+25% Birth Rate"
+      ],
+      "penalties": "No Horses",
+      "spells": "Town Watch",
+      "doctrine": "-7.5% Attack time (-0.75% each)",
+      "ability": "Opportunistic Raiders",
+      "effect": "Learn and Plunder attacks return armies 1 tick faster (after modifiers).",
+      "units": [
+        "Offensive Specialist: 12/0",
+        "Defensive Specialist: 0/10",
+        "Elite: 14/3 (900gc, 6.25nw)",
+        "Horse strength: 2 (no access to horses)"
+      ]
+    },
+    {
+      "name": "Dark Elf",
+      "archetype": "Magic / Attacker Hybrid",
+      "bonuses": [
+        "+20% Combat Instant Spell Damage",
+        "-25% Spell Rune Costs (excluding ritual)",
+        "Immune to Sabotage Wizards"
+      ],
+      "penalties": "-20% Sabotage Damage",
+      "spells": "Blizzard, Mind Focus",
+      "doctrine": "+10% Combat Instant Spell Damage (1% each)",
+      "ability": "Mystic Enthusiasts",
+      "effect": "Successful offensive instant spells refund 30% of the rune cost.",
+      "units": [
+        "Offensive Specialist: 11/0",
+        "Defensive Specialist: 0/11",
+        "Elite: 13/4 (900gc, 6.25nw)",
+        "Horse strength: 2"
+      ]
+    },
+    {
+      "name": "Dryad",
+      "archetype": "Top End Attack Power",
+      "bonuses": [
+        "+10% Offensive Military Efficiency",
+        "+25% Increased Dragon Slaying Strength"
+      ],
+      "penalties": "-10% Building Efficiency",
+      "spells": "Fanaticism",
+      "doctrine": "+7.5% OME (0.75% each)",
+      "ability": "Interdiction",
+      "effect": "Successful Attacks in War destroy 15% of enemy gold, 15% of enemy runes, and 15% of enemy food.",
+      "units": [
+        "Offensive Specialist: 10/0",
+        "Defensive Specialist: 0/9",
+        "Elite: 15/3 (925gc, 6.75nw)",
+        "Horse strength: 2"
+      ]
+    },
+    {
+      "name": "Dwarf",
+      "archetype": "Buildings",
+      "bonuses": [
+        "+20% Building Efficiency",
+        "-50% Building Construction Cost",
+        "+25% Building Credits Gained from Combat",
+        "-20% Damage Taken from Raze Attacks"
+      ],
+      "penalties": "+50% Food Consumption",
+      "spells": "Miner's Mystique",
+      "doctrine": "+10% Building Efficiency (1% each)",
+      "ability": "Construction Delays",
+      "effect": "For 3 ticks after a successful attack, the target's building efficiency is reduced by 10% (does not stack with multiple attacks).",
+      "units": [
+        "Offensive Specialist: 10/0",
+        "Defensive Specialist: 0/10",
+        "Elite: 13/5 (950gc, 6.5nw)",
+        "Horse strength: 2"
+      ]
+    },
+    {
+      "name": "Elf",
+      "archetype": "Magic Focus TM",
+      "bonuses": [
+        "+25% Wizards Per Acre",
+        "+50% Rune Production",
+        "+1% Extra Mana Per Tick"
+      ],
+      "penalties": "-20% Offensive Thievery Per Acre (TPA)",
+      "spells": "Greater Protection, Pitfalls",
+      "doctrine": "-20% Own casualities when defending (-2.0% each)",
+      "ability": "Arcane Respite",
+      "effect": "Once activated, for the next 6 days, regenerate +2 mana per day.",
+      "units": [
+        "Offensive Specialist: 9/0",
+        "Defensive Specialist: 0/11",
+        "Elite: 5/12 (1000gc, 7nw)",
+        "Horse strength: 2"
+      ]
+    },
+    {
+      "name": "Faery",
+      "archetype": "Balanced TM",
+      "bonuses": [
+        "+25% Offensive-Spell Duration",
+        "+1% Extra Mana Per Tick (in  war)",
+        "-1% Mana Self Spell Cost"
+      ],
+      "penalties": "-5% Max Population",
+      "spells": "Lightning Strike, Town Watch, Invisibility, Ghost Workers, Miner's Mystique",
+      "doctrine": "+7.5% DME (0.75% each)",
+      "ability": "Arcane Overflow",
+      "effect": "(In War) Every successful offensive spell also reduces enemy ritual effectiveness by 0.15%.",
+      "units": [
+        "Offensive Specialist: 9/0",
+        "Defensive Specialist: 0/10",
+        "Elite: 4/13 (1000gc, 7.25nw)",
+        "Horse strength: 2"
+      ]
+    },
+    {
+      "name": "Gnome",
+      "archetype": "Thief / Attacker Hybrid",
+      "bonuses": [
+        "+10% Sabotage Damage",
+        "Can Train Thieves with Specialist Credits",
+        "Immune to Expose Thieves",
+        "-25% Thief Losses"
+      ],
+      "penalties": "+20% Combat Instant Spell Damage Received",
+      "spells": "Quick Feet",
+      "doctrine": "+25% Birth Rate (2.5% each)",
+      "ability": "Cunning Assault",
+      "effect": "Each successful attack will provide one of the following thievery boosts, which last for 6 days: +25% offensive thievery effectiveness, -25% thief losses, or +10% sabotage damage. All of these can be active at the same time.",
+      "units": [
+        "Offensive Specialist: 11/0",
+        "Defensive Specialist: 0/11",
+        "Elite: 13/3 (850gc, 6nw)",
+        "Horse strength: 2"
+      ]
+    },
+    {
+      "name": "Halfling",
+      "archetype": "Thievery Focus TM",
+      "bonuses": [
+        "+1% Extra Stealth Per Tick (in  war)",
+        "+10% Max Population",
+        "+25% Thieves Per Acre"
+      ],
+      "penalties": "-20% Offensive Wizards Per Acre (WPA)",
+      "spells": "Invisibility",
+      "doctrine": "+5% Population (0.5% each)",
+      "ability": "Overgrowth",
+      "effect": "Once activated, your maximum population increases by +25% for 5 days.",
+      "units": [
+        "Offensive Specialist: 9/0",
+        "Defensive Specialist: 0/10",
+        "Elite: 6/11 (1000gc, 6.75nw)",
+        "Horse strength: 2"
+      ]
+    },
+    {
+      "name": "Human",
+      "archetype": "Economy",
+      "bonuses": [
+        "+25% Income",
+        "-20% Military Training Cost",
+        "-20% Military Wages",
+        "Incite Riot Immunity"
+      ],
+      "penalties": "+1 mana self spell cost",
+      "spells": "Tree of Gold",
+      "doctrine": "+15% Income (1.5% each)",
+      "ability": "Civil Administration",
+      "effect": "Prisoners generate an additional 2.0 gold coins per tick. Mercenary costs are reduced by 40%.",
+      "units": [
+        "Offensive Specialist: 10/0",
+        "Defensive Specialist: 0/10",
+        "Elite: 13/4 (900gc, 6.25nw)",
+        "Horse strength: 2"
+      ]
+    },
+    {
+      "name": "Orc",
+      "archetype": "Kills and Gains",
+      "bonuses": [
+        "+20% Battle Gains",
+        "-50% Draft Cost"
+      ],
+      "penalties": "-5% Defensive Military Efficiency",
+      "spells": "Bloodlust",
+      "doctrine": "+15% Enemy casualities when attacking (1.5% each)",
+      "ability": "Generals Authority",
+      "effect": "When attacking with 2 or more generals, enemy military casualties are increased by +15%.",
+      "units": [
+        "Offensive Specialist: 11/0",
+        "Defensive Specialist: 0/10",
+        "Elite: 14/3 (900gc, 6.25nw)",
+        "Horse strength: 2"
+      ]
+    },
+    {
+      "name": "Undead",
+      "archetype": "Sustain and Plague",
+      "bonuses": [
+        "-100% Food Consumption",
+        "-40% Own casualities when attacking and defending",
+        "Immune to the Plague"
+      ],
+      "penalties": "-15% Birth Rate",
+      "spells": "Ghost Workers",
+      "doctrine": "-20% Own casualities when attacking (-2.0% each)",
+      "ability": "Plaguebearers",
+      "effect": "All successful attacks have a 33% chance to spread plague to the target province.",
+      "units": [
+        "Offensive Specialist: 10/0",
+        "Defensive Specialist: 0/10",
+        "Elite: 13/4 (900gc, 6.25nw)",
+        "Horse strength: 2"
+      ]
+    }
+  ],
+  "personalities": [
+    {
+      "name": "Cleric",
+      "archetype": "Defensive",
+      "bonuses": [
+        "+15% Defensive Military Efficiency",
+        "-15% Battle (Resource) Losses",
+        "-15% Sabotage Damage Received",
+        "-15% Spell Damage Received",
+        "-15% Damage Taken From Massacre Attacks",
+        "Immune to the Plague"
+      ],
+      "spells": [
+        "Salvation"
+      ],
+      "starting": [
+        "+800 Soldiers",
+        "+800 Training Credits"
+      ],
+      "ability": "Architect's Revenge",
+      "effect": "Incoming Raze damage is reduced by 15%. Your Raze attacks destroy 20% additional buildings."
+    },
+    {
+      "name": "General",
+      "archetype": "Attacker",
+      "bonuses": [
+        "+1 Army generals",
+        "Offensive specialist gets +1 strength",
+        "Elite gets +1 offensive strength"
+      ],
+      "spells": [
+        "Righteous Aggressor"
+      ],
+      "starting": [
+        "+800 Soldiers",
+        "+800 Training Credits"
+      ],
+      "ability": "Undermining Assault",
+      "effect": "Your next successful attack applies Coordinated Strike to the target for 4 days, reducing their Watch Tower effectiveness by 15%."
+    },
+    {
+      "name": "Heretic",
+      "archetype": "Thief / Magic",
+      "bonuses": [
+        "+50% Land Effect - Guilds",
+        "+10% Combat Instant Spell Damage",
+        "+10% Sabotage Damage",
+        "No Thieves lost on Failed Espionage Operations"
+      ],
+      "spells": [
+        "Nightmares",
+        "Fools Gold",
+        "Mages Fury"
+      ],
+      "starting": [
+        "+400 Wizards",
+        "+400 Thieves"
+      ],
+      "ability": "Silent Assault",
+      "effect": "50% fewer thievery losses when performing sabotage operations."
+    },
+    {
+      "name": "Mystic",
+      "archetype": "Magic",
+      "bonuses": [
+        "+100% Land Effect - Guilds",
+        "+25% Offensive Wizards Per Acre (WPA)",
+        "+1% Extra Mana Per Tick"
+      ],
+      "spells": [
+        "Meteor Showers",
+        "Pitfalls",
+        "Chastity"
+      ],
+      "starting": [
+        "+800 Wizards"
+      ],
+      "ability": "Black Magic",
+      "effect": "Successful offensive instant spells also kill 1% of the target's peasant population."
+    },
+    {
+      "name": "Rogue",
+      "archetype": "Thief",
+      "bonuses": [
+        "+25% Offensive Thievery Per Acre (TPA)",
+        "+75% Thieves' Den Effectiveness",
+        "+1% Extra Stealth Per Tick",
+        "Access all Thievery Operations"
+      ],
+      "spells": [
+        "Mystic Aura"
+      ],
+      "starting": [
+        "+800 Thieves"
+      ],
+      "ability": "Shadow Persistence",
+      "effect": "You may perform thievery operations even while overpopulated."
+    },
+    {
+      "name": "Sage",
+      "archetype": "Science",
+      "bonuses": [
+        "-50% Losses on Learn Attacks",
+        "+10 Starting Scientists"
+      ],
+      "spells": [
+        "Scientific Insight",
+        "Fountain of Knowledge"
+      ],
+      "starting": [
+        "+800 Soldiers",
+        "+800 Training Credits"
+      ],
+      "ability": "Holy Inquisition",
+      "effect": "Successful attacks in War or Hostile temporarily suppress 15% of the target's Science Effectiveness and reduce Book Generation by 20% for 6-8 ticks."
+    },
+    {
+      "name": "Tactician",
+      "archetype": "Speed and Intel",
+      "bonuses": [
+        "-15% Attack Travel Time",
+        "+25% Specialist Training Credits",
+        "100% successful espionage operations at 2x stealth"
+      ],
+      "spells": [
+        "Illuminate Shadows"
+      ],
+      "starting": [
+        "+800 Soldiers",
+        "+800 Training Credits"
+      ],
+      "ability": "Dragon's Wrath",
+      "effect": "When attacking with a dragon, 3% of your raw offense from units will also deal damage to the dragon."
+    },
+    {
+      "name": "Warrior",
+      "archetype": "Attacker",
+      "bonuses": [
+        "+15% Offensive Military Efficiency",
+        "+15% Damage Dealt with Massacre Attacks"
+      ],
+      "spells": [
+        "Heroes Inspiration"
+      ],
+      "starting": [
+        "+800 Soldiers",
+        "+800 Training Credits"
+      ],
+      "ability": "Indomitable Spirit",
+      "effect": "Once activated Warriors gain 5% Offensive Military Efficiency for 6 days."
+    }
+  ],
+  "rituals": [
+    {
+      "name": "Barrier",
+      "effect": "-20% Damage from Enemy Instant Magic & Thievery Operations, -20% Battle (Resource) Losses, -20% Massacre Damage"
+    },
+    {
+      "name": "Benediction",
+      "effect": "+15% Building Efficiency, +15% Birth Rate, -20% Draft Costs, -20% Build Costs, +20% Draft Rate"
+    },
+    {
+      "name": "Haste",
+      "effect": "-10% Attack Time, -25% Training Time, -25% Construction Time"
+    },
+    {
+      "name": "Havoc",
+      "effect": "+25% Offensive WPA, +25% Offensive TPA, +15% Spell Damage, +15% Sabotage Damage"
+    },
+    {
+      "name": "Onslaught",
+      "effect": "+10% Offensive Military Efficiency, +15% Enemy Military Casualties on Attacks"
+    },
+    {
+      "name": "Stalwart",
+      "effect": "+5% Defensive Military Efficiency, -25% Military Casualties"
+    }
+  ],
+  "dragons": [
+    {
+      "name": "Emerald",
+      "effect": "+25% Military Casualties, -25% Combat Gains, destroys 1% of all troops on arrival"
+    },
+    {
+      "name": "Ruby",
+      "effect": "-10% Military Efficiency, +20% Military Wages, destroys 2% of troops home at home on arrival"
+    },
+    {
+      "name": "Sapphire",
+      "effect": "-20% WPA and TPA, +15% Instant Spell and Sabotage Damage taken destroys 3% of thieves and wizards on arrival"
+    },
+    {
+      "name": "Topaz",
+      "effect": "-20% Building Efficiency, -25% Income, +20% Wages, destroys 10% of buildings on arrival"
+    }
+  ],
+  "changelog": [
+    "Ascendancy Ritual: Removed",
+    "Heretic: Added Mages Fury spell",
+    "Dark Elf: Added Mind Focus spell",
+    "Elf: Penalty changed to offensive TPA, Doctine Changed, Unique Ability buffed to +2 mana/day",
+    "Faery: Added bonus -1% mana self spell cost, Unique Ability changed to Arcane Overflow",
+    "Halfling: Penalty change to offensive WPA, Doctrine Changed",
+    "Human: Removed Greed Immunity, Unique Ability changed to Civil Adminstration",
+    "Sage: Unique Ability Changed to Holy Inquisition",
+    "Tactician: Attack Travel Time bonus reduced to -15%",
+    "Warrior: Unique Ability Changed to Indomitable Spirit",
+    "Orc: Penalty changed to -5% DME"
+  ],
+  "abilities": [
+    "Overgrowth: Once activated, your maximum population increases by +25% for 5 days.",
+    "Cunning Assault: Each successful attack will provide one of the following thievery boosts, which last for 6 days: +25% offensive thievery effectiveness, -25% thief losses, or +10% sabotage damage. All of these can be active at the same time.",
+    "Indomitable Spirit: Once activated Warriors gain 5% Offensive Military Efficiency for 6 days.",
+    "Arcane Respite: Once activated, for the next 6 days, regenerate +2 mana per day.",
+    "Arcane Overflow: (In War) Every successful offensive spell also reduces enemy ritual effectiveness by 0.15%."
+  ]
+}
