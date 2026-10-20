@@ -1,237 +1,79 @@
-/* page.module.css - DARK THEME (No :root variables) */
-
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: clamp(1.5rem, 3vw, 2.5rem);
-    background: rgba(9, 13, 32, 0.85);
-    border-radius: 18px;
-    border: 1px solid rgba(124, 58, 237, 0.16);
-    box-shadow: 0 30px 80px rgba(5, 10, 25, 0.55);
-    color: var(--color-text);
-}
- 
-.heading {
-    font-size: clamp(2rem, 4vw, 2.75rem);
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-    text-align: center;
-    color: #f8fbff;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
- 
-.info {
-    color: var(--color-text-faded);
-    align-items: start;
-    gap: 3rem;
-    line-height: 1.6;
-    display: flex;
-    justify-content: center;
-}
-
-.infoColumn {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-}
- 
-.info span {
-    font-weight: bold;
-    /* Updated bold text color */
-    color: #f0f0f0; 
-}
- 
-.kingdomsTable {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1.5rem;
-    box-shadow: 0 18px 50px rgba(2, 6, 23, 0.65);
-    border-radius: 14px;
-    overflow: hidden;
-    background: rgba(11, 18, 40, 0.85);
-    border: 1px solid rgba(124, 58, 237, 0.14);
-}
- 
-.kingdomsTable th {
-    background: rgba(124, 58, 237, 0.18);
-    text-align: left;
-    padding: 1rem;
-    font-size: 0.9rem;
-    color: var(--color-text);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.kingdomsTable th:last-child,
-.kingdomsTable td:last-child {
-    text-align: center;
-    font-weight: bold;
-    /* Updated status color */
-    color: #4a90e2; 
-    min-width: 170px;
-}
-
- 
-.kingdomsTable td {
-    padding: 1rem;
-    font-size: 0.95rem;
-    color: var(--color-text-faded);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
- 
-.kingdomsTable tbody tr:hover {
-    background: rgba(124, 58, 237, 0.08);
-}
- 
-.provinceTable {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 0.5rem;
-}
- 
-.provinceTable th,
-.provinceTable td {
-    text-align: left;
-    padding: 0.75rem;
-    /* Adjusted border for dark theme */
-    border: 1px solid #444; 
-}
- 
-.provinceTable thead th {
-    background-color: rgba(124, 58, 237, 0.18);
-}
- 
-.expandedRow {
-    background-color: rgba(6, 10, 28, 0.85);
-}
- 
-.expandButton {
-    cursor: pointer;
-    background: none;
-    border: none;
-    font-size: 1rem;
-    /* Updated button color */
-    color: #4a90e2; 
-    padding: 0;
-    margin-right: 0.5rem;
-}
- 
-.raceDistribution {
-    margin-top: 2rem;
-    padding: 1rem;
-    background: rgba(9, 16, 35, 0.8);
-    border: 1px solid rgba(124, 58, 237, 0.14);
-    border-radius: 12px;
-    box-shadow: 0 15px 35px rgba(2, 6, 23, 0.5);
-}
- 
-.raceDistribution h3 {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    /* Updated race section heading color */
-    color: #f0f0f0; 
-}
- 
-.raceList {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
- 
-.raceList li {
-    margin-bottom: 0.25rem;
-    /* Ensure list text is visible */
-    color: #b0b0b0; 
-}
- 
-.raceList strong {
-    margin-right: 0.5rem;
-    /* Highlight strong text */
-    color: #f0f0f0; 
-}
- 
-/* Mobile-specific styles */
-@media (max-width: 768px) {
-    .container {
-        padding: 1rem;
-    }
- 
-    .heading {
-        font-size: 2rem;
-        margin-bottom: 1.2rem;
-    }
- 
-    .info {
-        font-size: 0.9rem;
-        grid-template-columns: 1fr;
-        text-align: left;
-    }
- 
-    .kingdomsTable th,
-    .kingdomsTable td {
-        font-size: 0.85rem;
-        padding: 0.75rem;
-    }
- 
-    .provinceTable th,
-    .provinceTable td {
-        font-size: 0.8rem;
-        padding: 0.5rem;
-    }
- 
-    .expandButton {
-        font-size: 0.9rem;
-    }
- 
-    .kingdomsTable,
-    .provinceTable {
-        display: block;
-        overflow-x: auto;
-        white-space: nowrap;
-    }
- 
-    .kingdomsTable td,
-    .kingdomsTable th {
-        padding: 0.5rem;
-    }
- 
-    .raceDistribution {
-        padding: 0.75rem;
-    }
- 
-    .raceDistribution h3 {
-        font-size: 1rem;
-    }
-}
-
-.loadingWrapper {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;          /* or 100vh for full screen */
-  gap: 12px;
-}
-
-/* Spinner circle */
-.spinner {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 3px solid #4a90e2;
-  border-top-color: #111;    /* spinner color */
-  animation: spin 0.7s linear infinite;
-}
-
-.loadingText {
-  font-size: 16px;
-  font-weight: 500;
-  color: #f0f0f0;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
+.container { max-width: 1500px; margin: 0 auto; padding: clamp(1rem, 3vw, 2rem); color: var(--color-text, #e5edf9); background: rgba(9,13,32,.9); border: 1px solid #29324a; border-radius: 18px; }
+.container button { cursor: pointer; color: inherit; background: #18243b; border: 1px solid #3a4b68; border-radius: 7px; padding: .5rem .75rem; font: inherit; }
+.container button:hover { background: #243650; }
+.container button:disabled { opacity: .45; cursor: default; }
+.container button:focus-visible, .tableScroll:focus-visible { outline: 2px solid #67d7ed; outline-offset: 3px; }
+.pageHeader, .sectionHeading { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
+.pageHeader { margin-bottom: 1.5rem; }
+.refreshControls { display: flex; flex-wrap: wrap; gap: .5rem; }
+.tiedLeaders { margin-top: .5rem; font-size: .75rem; color: #b6c7de; overflow-wrap: anywhere; }
+.tiedLeaders summary { cursor: pointer; color: #92dfe9; padding: .3rem 0; }
+.tiedLeaders summary:focus-visible { outline: 2px solid #67d7ed; outline-offset: 2px; }
+.tiedLeaders ul { padding-left: 1rem; max-height: 8rem; overflow: auto; list-style: disc; }
+.heading { font-size: clamp(1.9rem, 4vw, 2.6rem); font-weight: 700; margin: .2rem 0 .5rem; color: #f5f8ff; }
+.eyebrow { text-transform: uppercase; letter-spacing: .14em; color: #86dbe5; font-size: .75rem; }
+.muted { color: #a8b6cd; font-size: .85rem; line-height: 1.6; }
+.info { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 1rem; padding: 1rem; background: #101a2c; border-radius: 10px; color: #d9e3f1; font-size: .85rem; }
+.info span { display: block; color: #94a9c5; font-size: .75rem; margin-bottom: .3rem; }
+.notice { border: 1px solid #86632e; background: #30281b; padding: 1rem; border-radius: 10px; margin-top: 1rem; }
+.statistics { margin: 1.5rem 0 2rem; }
+.sectionHeading { margin: 1rem 0; }
+.sectionHeading h2 { font-size: 1.2rem; font-weight: 650; }
+.sectionHeading > span { font-size: .8rem; color: #a8b6cd; }
+.statGrid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .8rem; }
+.statCard { min-width: 0; padding: 1rem; border: 1px solid #2b3a53; border-radius: 12px; background: linear-gradient(135deg,#142239,#0f1729); overflow-wrap: anywhere; }
+.statCard h3 { font-size: .78rem; color: #a9bed8; margin-bottom: .6rem; }
+.statCard > strong { font-size: 1.4rem; color: #edfcff; line-height: 1.3; }
+.statCard p, .leaderList { color: #b6c7de; font-size: .8rem; line-height: 1.6; margin-top: .4rem; }
+.statCard > strong { display: block; overflow-wrap: anywhere; }
+.provinceLeader { font-size: .8rem; min-width: 0; }
+.provinceLeader + .provinceLeader { margin-top: .7rem; padding-top: .7rem; border-top: 1px solid #2b3a53; }
+.provinceLeader b { color: #d6e8fb; font-weight: 600; }
+.moreStatistics { margin-top: 1rem; border: 1px solid #2b3a53; border-radius: 12px; background: #101a2c; }
+.moreStatistics summary { cursor: pointer; padding: 1rem; color: #e1eefb; font-size: .9rem; overflow-wrap: anywhere; }
+.moreStatistics summary span { margin-left: .5rem; font-size: .75rem; color: #a9bed8; }
+.moreStatistics summary:focus-visible { outline: 2px solid #67d7ed; outline-offset: 3px; }
+.moreStatisticsBody { padding: 0 1rem 1rem; min-width: 0; }
+.leaderList { padding-left: 1rem; max-height: 7rem; overflow-y: auto; list-style: disc; }
+.raceOverview { padding: 1rem; margin-top: .8rem; border: 1px solid #2b3a53; border-radius: 12px; background: #101a2c; }
+.raceOverview h3 { font-size: .9rem; margin-bottom: .8rem; }
+.raceOverview h3 span { font-size: .75rem; color: #9eb2cb; margin-left: .5rem; }
+.raceBars { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: .8rem 1.5rem; }
+.raceLabel { display: flex; justify-content: space-between; gap: .5rem; font-size: .75rem; margin-bottom: .3rem; }
+.raceLabel span:last-child { color: #a9bed8; }
+.barTrack { background: #26334a; border-radius: 4px; height: 5px; overflow: hidden; }
+.barTrack > div { height: 100%; min-width: 2px; border-radius: inherit; }
+.sortSummary { color: #92dfe9; font-size: .8rem; padding: .5rem 0; }
+.tableScroll { overflow: auto; max-height: 75vh; border: 1px solid #2b3a53; border-radius: 12px; margin-top: 1rem; }
+.kingdomsTable, .provinceTable { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .8rem; font-variant-numeric: tabular-nums; }
+.kingdomsTable { min-width: 1080px; }
+.kingdomsTable th { position: sticky; top: 0; z-index: 1; background: #1b2941; border-bottom: 1px solid #42516a; padding: .65rem .6rem; white-space: nowrap; text-align: right; }
+.kingdomsTable th button, .provinceTable th button { background: transparent; border: 0; padding: .2rem; font-size: inherit; font-weight: 600; }
+.kingdomsTable th button:hover, .provinceTable th button:hover { background: #2c405e; }
+.kingdomsTable th:nth-child(2), .kingdomsTable th:nth-child(3), .kingdomsTable th:last-child { text-align: left; }
+.kingdomsTable td { border-bottom: 1px solid #23314a; padding: .8rem .7rem; text-align: right; color: #c4d1e4; background: #101a2d; }
+.kingdomsTable td:nth-child(2), .kingdomsTable td:nth-child(3), .kingdomsTable td:last-child { text-align: left; }
+.kingdomsTable td:first-child { width: 35px; }
+.kingdomsTable tbody tr:hover > td { background: #19283e; }
+.kingdomsTable .kingdomName { color: #eff5ff; font-weight: 600; min-width: 170px; max-width: 250px; overflow-wrap: anywhere; }
+.kingdomsTable td:last-child { min-width: 170px; }
+.kingdomsTable th.sortedColumn { color: #89e2ed; }
+.kingdomsTable th sup { margin-left: .2rem; font-size: .6rem; }
+.container .expandButton { color: #88dfeb; min-width: 30px; padding: .2rem; font-size: 1rem; }
+.cfBadge, .endingBadge { display: inline-block; border-radius: 6px; padding: .25rem .4rem; background: #123d45; color: #93eddd; font-size: .75rem; white-space: nowrap; }
+.endingBadge { background: #49361c; color: #ffce83; }
+.expiry { display: block; color: #a7bad2; margin-top: .3rem; font-size: .7rem; }
+.kingdomsTable .expandedRow > td { padding: 1rem; background: #0c1424; }
+.detailHeading { display: flex; flex-wrap: wrap; gap: .6rem 1.5rem; margin-bottom: .8rem; text-align: left; }
+.detailHeading span { color: #99c5d5; font-size: .75rem; }
+.provinceTable th { position: static; background: #1c3044; text-align: left; }
+.provinceTable td, .provinceTable td:last-child { text-align: left; min-width: auto; padding: .6rem; }
+.emptyState { padding: 2rem; text-align: center; color: #b8c9df; }
+.emptyState p { margin: .7rem 0; }
+.srOnly { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+.loadingWrapper { min-height: 60vh; display: grid; place-content: center; justify-items: center; gap: 1rem; color: #c4d1e4; }
+.spinner { width: 32px; height: 32px; border: 3px solid #36445c; border-top-color: #6fdfeb; border-radius: 50%; animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media(max-width: 1000px) { .statGrid { grid-template-columns: repeat(2,minmax(0,1fr)); } .info { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width: 600px) { .statGrid, .raceBars { grid-template-columns: minmax(0,1fr); } .pageHeader { align-items: flex-start; } .raceOverview h3 span { display: block; margin: .3rem 0; } .info { font-size: .75rem; gap: .7rem; } .moreStatistics summary span { display: block; margin: .35rem 0 0; } .statCard > strong { font-size: clamp(1.1rem, 5vw, 1.4rem); } }
+@media(prefers-reduced-motion: reduce) { .spinner { animation: none; } }

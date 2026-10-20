@@ -1,7 +1,7 @@
 // app/api/kingdoms/route.ts
 export async function GET(req: Request) {
   try {
-    const response = await fetch("https://utopia-game.com/wol/game/kingdoms_dump_v2/");
+    const response = await fetch("https://utopia-game.com/wol/game/kingdoms_dump_v2/", { signal: AbortSignal.timeout(10000) });
     if (!response.ok) {
       throw new Error("Failed to fetch data");
     }

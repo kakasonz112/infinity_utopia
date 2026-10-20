@@ -1,255 +1,49 @@
 "use client";
-
-import { useState, useCallback, useEffect } from "react";
-import styles from "./FilterBar.module.css"; // Import the CSS Module
-
-function roundToNearest50000(num: number): number {
-  const rounded = Math.ceil(num / 50000) * 50000;
-  return rounded;
+import { useEffect, useState } from 'react';
+import styles from "./FilterBar.module.css";
+function NumberField({ value, max, id, label, onCommit }: { value: number; max: number; id: string; label: string; onCommit: (value: number) => void }) {
+ const [draft, setDraft] = useState(String(value));
+ useEffect(() => setDraft(String(value)), [value]);
+ function commit() {
+  const parsed = draft.trim() === '' ? NaN : Number(draft);
+  if (!Number.isFinite(parsed)) { setDraft(String(value)); return; }
+  const next = Math.min(max, Math.max(0, Math.round(parsed)));
+  setDraft(String(next));
+  onCommit(next);
+ }
+ return <input id={id} type="number" inputMode="numeric" aria-label={label} min={0} max={max} value={draft} onChange={event => setDraft(event.target.value)} onBlur={commit} onKeyDown={event => {
+  if (event.key === 'Enter') { event.preventDefault(); event.currentTarget.blur(); }
+  if (event.key === 'Escape') { setDraft(String(value)); }
+ }} />;
 }
-
-function roundToNearest100(num: number): number {
-  const rounded = Math.ceil(num / 100) * 100;
-  return rounded;
-}
-
-// Debounce utility function (same as before)
-const useDebounce = (value: any, delay: number) => {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-};
-
-type Filters = {
-  land: number[];
-  networth: number[];
-  provinces: number[];
-};
-
-// NEW TYPE: Ceasefire filter type
 export type CfFilterType = "ALL" | "CF_ONLY";
-
-type FilterBarProps = {
-  onFilterChange: (filters: Filters) => void;
-  onCfFilterChange: (cfFilter: CfFilterType) => void;
-  biggestLand: number;
-  biggestNetworth: number;
-};
-
-export default function FilterBar({ onFilterChange, onCfFilterChange, biggestLand, biggestNetworth }: FilterBarProps) {
-  const [filters, setFilters] = useState<Filters>({
-    land: [500, roundToNearest100(biggestLand)], // Start at multiples of 10
-    networth: [50000, roundToNearest50000(biggestNetworth)],
-    provinces: [1, 25],
-  });
-  // NEW STATE: Ceasefire filter state
-  const [cfFilter, setCfFilter] = useState<CfFilterType>("ALL");
-
-  // Use debounce for filters
-  const debouncedFilters = useDebounce(filters, 500);
-
-  // Handle filter changes
-  const handleChange = useCallback(
-    (key: keyof Filters, value: number[]) => {
-      setFilters((prev) => {
-        const newFilters = { ...prev, [key]: value };
-        return newFilters;
-      });
-    },
-    []
-  );
-
-  // Trigger the onFilterChange when debouncedFilters change
-  useEffect(() => {
-    onFilterChange(debouncedFilters);
-  }, [debouncedFilters, onFilterChange]);
-
-  // Trigger the onCfFilterChange when cfFilter changes
-  useEffect(() => {
-    onCfFilterChange(cfFilter);
-  }, [cfFilter, onCfFilterChange]);
-  
-    // Format large numbers - Option 1: More decimal places for K and M
-    const formatNumber = (num: number) => {
-        if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(3)}M`; // 3 decimal places
-        if (num >= 1_000) return `${(num / 1_000).toFixed(2)}K`; // 2 decimal places
-        return num.toString();
-    };
-
-  return (
-    <div className={styles.filterBar}>
-      <div className={styles.filterHeader}>
-        <div className={styles.filterTitle}>Filters</div>
-        <div className={styles.filterHint}></div>
-      </div>
-
-      <div className={styles.cfSection}>
-        <span className={styles.cfLabel}>Ceasefire Filter</span>
-        <div className={styles.cfOptions}>
-          <label className={styles.cfOption}>
-            <input
-              type="radio"
-              name="cfFilter"
-              value="ALL"
-              checked={cfFilter === "ALL"}
-              onChange={() => setCfFilter("ALL")}
-            />
-            <span>All Kingdoms</span>
-          </label>
-          <label className={styles.cfOption}>
-            <input
-              type="radio"
-              name="cfFilter"
-              value="CF_ONLY"
-              checked={cfFilter === "CF_ONLY"}
-              onChange={() => setCfFilter("CF_ONLY")}
-            />
-            <span>Ceasefire Only</span>
-          </label>
-        </div>
-      </div>
-
-      <div className={styles.rangeGroup}>
-        <div className={styles.rangeHeader}>
-          <span className={styles.rangeTitle}>Land Range</span>
-          <span className={styles.rangeValues}>
-            <span>Min {formatNumber(filters.land[0])}</span>
-            <span>Max {formatNumber(filters.land[1])}</span>
-          </span>
-        </div>
-        <div className={styles.sliderStack}>
-          <div className={styles.sliderLine}>
-            <span className={styles.sliderLabel}>Min</span>
-            <input
-              type="range"
-              min="400"
-              max={roundToNearest100(biggestLand)}
-              value={filters.land[0]}
-              onChange={(e) =>
-                handleChange("land", [Number(e.target.value), filters.land[1]])
-              }
-              step="100"
-              className={styles.rangeInput}
-            />
-          </div>
-          <div className={styles.sliderLine}>
-            <span className={styles.sliderLabel}>Max</span>
-            <input
-              type="range"
-              min="400"
-              max={roundToNearest100(biggestLand)}
-              value={filters.land[1]}
-              onChange={(e) =>
-                handleChange("land", [filters.land[0], Number(e.target.value)])
-              }
-              step="100"
-              className={styles.rangeInput}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.rangeGroup}>
-        <div className={styles.rangeHeader}>
-          <span className={styles.rangeTitle}>Networth Range</span>
-          <span className={styles.rangeValues}>
-            <span>Min {formatNumber(filters.networth[0])}</span>
-            <span>Max {formatNumber(filters.networth[1])}</span>
-          </span>
-        </div>
-        <div className={styles.sliderStack}>
-          <div className={styles.sliderLine}>
-            <span className={styles.sliderLabel}>Min</span>
-            <input
-              type="range"
-              min="50000"
-              max={roundToNearest50000(biggestNetworth)}
-              value={filters.networth[0]}
-              onChange={(e) =>
-                handleChange("networth", [
-                  Number(e.target.value),
-                  filters.networth[1],
-                ])
-              }
-              step="50000"
-              className={styles.rangeInput}
-            />
-          </div>
-          <div className={styles.sliderLine}>
-            <span className={styles.sliderLabel}>Max</span>
-            <input
-              type="range"
-              min="50000"
-              max={roundToNearest50000(biggestNetworth)}
-              value={filters.networth[1]}
-              onChange={(e) =>
-                handleChange("networth", [
-                  filters.networth[0],
-                  Number(e.target.value),
-                ])
-              }
-              step="50000"
-              className={styles.rangeInput}
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className={styles.rangeGroup}>
-        <div className={styles.rangeHeader}>
-          <span className={styles.rangeTitle}>Province Count</span>
-          <span className={styles.rangeValues}>
-            <span>Min {filters.provinces[0]}</span>
-            <span>Max {filters.provinces[1]}</span>
-          </span>
-        </div>
-        <div className={styles.sliderStack}>
-          <div className={styles.sliderLine}>
-            <span className={styles.sliderLabel}>Min</span>
-            <input
-              type="range"
-              min="1"
-              max="25"
-              value={filters.provinces[0]}
-              onChange={(e) =>
-                handleChange("provinces", [
-                  Number(e.target.value),
-                  filters.provinces[1],
-                ])
-              }
-              step="1"
-              className={styles.rangeInput}
-            />
-          </div>
-          <div className={styles.sliderLine}>
-            <span className={styles.sliderLabel}>Max</span>
-            <input
-              type="range"
-              min="1"
-              max="25"
-              value={filters.provinces[1]}
-              onChange={(e) =>
-                handleChange("provinces", [
-                  filters.provinces[0],
-                  Number(e.target.value),
-                ])
-              }
-              step="1"
-              className={styles.rangeInput}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+export type Filters = { land: number[]; networth: number[]; provinces: number[] };
+type Props = { filters: Filters; cfFilter: CfFilterType; onFilterChange: (filters: Filters) => void; onCfFilterChange: (value: CfFilterType) => void; biggestLand: number; biggestNetworth: number; onReset: () => void; cfAvailable: boolean };
+export default function FilterBar({ filters, cfFilter, onFilterChange, onCfFilterChange, biggestLand, biggestNetworth, onReset, cfAvailable }: Props) {
+ const ranges = [
+  { key: "land" as const, label: "Land (acres)", max: Math.max(100, filters.land[1], Math.ceil(biggestLand / 100) * 100), step: 100 },
+  { key: "networth" as const, label: "Networth", max: Math.max(50000, filters.networth[1], Math.ceil(biggestNetworth / 50000) * 50000), step: 50000 },
+  { key: "provinces" as const, label: "Province count", max: 25, step: 1 },
+ ];
+ function change(key: keyof Filters, index: number, value: number, max: number) {
+  if (!Number.isFinite(value)) return;
+  const next = [...filters[key]];
+  next[index] = Math.min(max, Math.max(0, Math.round(value)));
+  if (index === 0) next[1] = Math.max(next[0], next[1]); else next[0] = Math.min(next[0], next[1]);
+  onFilterChange({ ...filters, [key]: next });
+ }
+ return <section className={styles.filterBar} aria-label="Kingdom filters">
+  <div className={styles.filterHeader}><h2 className={styles.filterTitle}>Filters</h2><button type="button" onClick={onReset}>Reset filters</button></div>
+  <div className={styles.cfSection}><span className={styles.cfLabel}>War ceasefire</span>
+   {([['ALL', 'All kingdoms'], ['CF_ONLY', 'Tracked war CF only']] as const).map(([value, label]) => <label className={styles.cfOption} key={value}><input type="radio" name="cfFilter" checked={cfFilter === value} disabled={value === 'CF_ONLY' && !cfAvailable} onChange={() => onCfFilterChange(value)} />{label}</label>)}
+  </div>
+  {ranges.map(({ key, label, max, step }) => <fieldset className={styles.rangeGroup} key={key}>
+   <legend className={styles.rangeTitle}>{label}</legend>
+   {['Min', 'Max'].map((bound, index) => <div className={styles.sliderLine} key={bound}>
+    <label htmlFor={`${key}-${bound}`}>{bound}</label>
+    <NumberField id={`${key}-${bound}`} label={`${label} ${bound}`} max={max} value={filters[key][index]} onCommit={value => change(key, index, value, max)} />
+    <input aria-label={`${label} ${bound} slider`} type="range" min={0} max={max} step={step} value={filters[key][index]} onChange={e => change(key, index, +e.target.value, max)} className={styles.rangeInput} />
+   </div>)}
+  </fieldset>)}
+ </section>;
 }
