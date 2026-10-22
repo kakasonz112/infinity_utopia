@@ -6,6 +6,7 @@ import Image from 'next/image';
 import styles from './page.module.css';
 
 const tools = [
+  { href: '/intel', icon: 'KD', title: 'Kingdom Intel', desc: 'Live province reports, enemy kingdom lookup, historical intel, war plans and kingdom search.' },
   { href: '/kingdoms', icon: 'View', title: 'View Kingdoms', desc: 'Overview of all kingdoms taken from kingdom_dump_v2 with CF tracker but its +1/-1 tick off due to the dump api not updated on time.' },
   { href: '/counter', icon: 'C', title: 'Target Counter', desc: 'A counter to count how much the province has been hit' },
   { href: '/target', icon: 'A', title: 'Target Assign', desc: 'Basically to assign target base on best gain ratio to everyone. Just ctrl-a on kingdom page n paste into the input field' },
