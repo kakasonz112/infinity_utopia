@@ -13,3 +13,23 @@ test('spell view shows names and zero-tick durations and distinguishes missing i
 test('survey columns sort by the selected current, incoming or total percentage',()=>{for(const [metric,expected]of [['pctCurr','5%'],['pctInc','2%'],['pctTot','7%']]){const html=page('Survey',{9:metric,7:{key:'building:Banks',descending:false}});assert.match(html,/Banks/);assert.ok(html.includes(expected));const first=metric==='pctInc'?'2':'11';assert.match(html,new RegExp('<tbody><tr class=""><td class="idCell">'+first+'<'));}assert.match(page('Survey'),/91%/);});
 test('science displays categories, real zero effects and focused full-report details',()=>{const html=page('Science',{8:11});assert.match(html,/Allocated books/);assert.match(html,/Alchemy/);assert.match(html,/4.7%/);assert.match(html,/0%/);assert.match(html,/Science details/);assert.match(html,/Science intel/);});
 
+test('all armies away appear as separate rows without expanding the province or combining return times',()=>{
+  const original=provinces[0].som.armiesAway;
+  provinces[0].som.armiesAway=[
+    {generals:1,solds:12,oSpecs:200,elites:300,horses:100,land:20,secondsRemaining:7200},
+    {generals:2,solds:34,oSpecs:400,elites:600,horses:200,land:40,secondsRemaining:14400},
+    {generals:1,solds:0,oSpecs:200,elites:300,horses:100,land:0,secondsRemaining:7201},
+  ];
+  try {
+    const html=page('Army');
+    assert.match(html,/<th scope="row">Army 1<\/th>/);
+    assert.match(html,/<th scope="row">Army 2<\/th>/);
+    assert.match(html,/<th scope="row">Army 3<\/th>/);
+    assert.match(html,/2h 0m 0s/);assert.match(html,/4h 0m 0s/);assert.match(html,/2h 0m 1s/);
+    assert.match(html,/<th scope="row">Army 2<\/th><td>2<\/td><td>34<\/td><td>400<\/td><td>600<\/td><td>200<\/td><td>40<\/td>/);
+    assert.doesNotMatch(html,/Next return/);
+    assert.match(html,/Away-army intel unavailable/);
+    provinces[0].som.armiesAway=[];
+    assert.match(page('Army'),/No armies away/);
+  } finally { provinces[0].som.armiesAway=original; }
+});

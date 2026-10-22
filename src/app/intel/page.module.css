@@ -149,3 +149,11 @@
 .spellList small { color: #a5dacd; white-space: nowrap; }
 .dragScroll { cursor: grab; overscroll-behavior-x: contain; }
 .dragScroll[data-dragging=true], .dragScroll[data-dragging=true] * { cursor: grabbing !important; user-select: none; }
+.provinceTable tbody td.armiesCell { padding: 0 18px 18px; white-space: normal; background: #091522; }
+.awayArmies { border: 1px solid #344d60; border-left: 3px solid var(--accent); border-radius: 6px; overflow: hidden; margin-top: 4px; }
+.awayArmies > p { display: flex; flex-wrap: wrap; gap: 8px 24px; padding: 10px 14px; margin: 0; color: var(--accent); font-size: .76rem; }
+.awayArmies small { margin-left: auto; color: var(--muted); }
+.awayArmyTable { width: 100%; border-collapse: collapse; font-size: .76rem; white-space: nowrap; }
+.provinceTable .awayArmyTable th, .provinceTable .awayArmyTable td { min-width: auto; padding: 10px 14px; border-bottom: 1px solid #29394e; font-variant-numeric: tabular-nums; }
+.awayArmyTable thead th { color: #a8bbd0; background: #172a3c; }
+.armyEmpty { color: var(--muted); font-size: .76rem; padding: 8px 0; margin: 0; }
