@@ -147,3 +147,5 @@
 .spellList { display: flex; flex-direction: column; gap: 5px; min-width: 155px; max-width: 260px; white-space: normal; }
 .spellList > span { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; padding: 4px 8px; border: 1px solid #334c60; border-radius: 5px; background: #142f3b; font-size: .73rem; }
 .spellList small { color: #a5dacd; white-space: nowrap; }
+.dragScroll { cursor: grab; overscroll-behavior-x: contain; }
+.dragScroll[data-dragging=true], .dragScroll[data-dragging=true] * { cursor: grabbing !important; user-select: none; }
