@@ -4,16 +4,17 @@ import { Fragment, useMemo, useState } from 'react';
 import type { IntelKingdom, IntelProvince, IntelResponse } from '@/lib/utopiaIntel';
 import styles from './page.module.css';
 import DragScroll from './DragScroll';
+import ColumnPicker, { discoverFields, useColumnLayout } from './ColumnPicker';
 
 export type Result = { kingdom: IntelKingdom | null; response: IntelResponse | null; error: string | null };
-type Column = { key: string; label: string; unit?: string; value?: (p: IntelProvince) => unknown };
+type Column = { key: string; label: string; unit?: string; ratio?: string; value?: (p: IntelProvince) => unknown };
 const views: Record<string, Column[]> = {
-  Overview: [{ key: 'race', label: 'Race' }, { key: 'sot.personality', label: 'Personality' }, { key: 'land', label: 'Land', unit: 'acres' }, { key: 'networth', label: 'Networth', unit: 'gc' }, { key: 'nwpa', label: 'NW / acre' }, { key: 'sot.ageSeconds', label: 'Throne intel', unit: 'age' }],
+  Overview: [{ key: 'race', label: 'Race' }, { key: 'sot.personality', label: 'Personality' }, { key: 'land', label: 'Land', unit: 'acres' }, { key: 'networth', label: 'Networth', unit: 'gc' }, { key: 'nwpa', label: 'NW / acre' }, { key: 'sot.offPoints', label: 'Off (opa)', ratio: 'sot.opa' }, { key: 'sot.defPoints', label: 'Def (dpa)', ratio: 'sot.dpa' }, { key: 'armySummary', label: 'Army', value: armySummary }, { key: 'defHome', label: 'Def Home', value: p => get(p, 'calcs.defPointsSummary.defPointsHome') ?? get(p, 'som.defPointsHome') ?? get(p, 'sot.defPointsHome') }, { key: 'som.offPointsHome', label: 'Off Home' }, { key: 'sot.ageSeconds', label: 'Throne intel', unit: 'age' }],
   Military: [{ key: 'sot.offPoints', label: 'Offense' }, { key: 'calcs.defPointsSummary.defPointsHome', label: 'Defense home' }, { key: 'sot.opa', label: 'Off / acre' }, { key: 'sot.dpa', label: 'Def / acre' }, { key: 'sot.elites', label: 'Elites' }, { key: 'som.ageSeconds', label: 'Military intel', unit: 'age' }],
-  Economy: [{ key: 'sot.money', label: 'Gold', unit: 'gc' }, { key: 'sot.food', label: 'Food' }, { key: 'sot.runes', label: 'Runes' }, { key: 'sot.peasants', label: 'Peasants' }, { key: 'sot.be', label: 'Building eff.', unit: '%' }, { key: 'sot.tb', label: 'Trade balance' }],
+  Economy: [{ key: 'sot.tpa', label: 'rTpa' }, { key: 'calcs.modOffTpa', label: 'mTpa (off)' }, { key: 'calcs.modDefTpa', label: 'mTpa (def)' }, { key: 'sot.money', label: 'Gold', unit: 'gc' }, { key: 'sot.food', label: 'Food' }, { key: 'sot.runes', label: 'Runes' }, { key: 'sot.peasants', label: 'Peasants' }, { key: 'sot.be', label: 'Building eff.', unit: '%' }, { key: 'sot.tb', label: 'Trade balance' }],
   'Thievery & magic': [{ key: 'sot.thieves', label: 'Thieves' }, { key: 'sot.tpa', label: 'Raw TPA' }, { key: 'sot.stealth', label: 'Stealth', unit: '%' }, { key: 'sot.wizards', label: 'Wizards' }, { key: 'sot.wpa', label: 'Raw WPA' }, { key: 'sot.mana', label: 'Mana', unit: '%' }],
   Army: [{ key: 'som.standingArmy.generals', label: 'Generals home' }, { key: 'som.standingArmy.solds', label: 'Soldiers home' }, { key: 'som.standingArmy.oSpecs', label: 'Off. specs home' }, { key: 'som.standingArmy.elites', label: 'Elites home' }, { key: 'som.standingArmy.horses', label: 'Horses home' }, { key: 'som.training.totalTraining', label: 'In training' }, { key: 'som.ageSeconds', label: 'Military intel', unit: 'age' }],
-  Spells: [{ key: 'sot.goodSpells', label: 'Beneficial spells', unit: 'spells' }, { key: 'sot.badSpells', label: 'Harmful spells', unit: 'spells' }, { key: 'sot.cooldown', label: 'Cooldowns', unit: 'spells' }, { key: 'sot.mana', label: 'Mana', unit: '%' }, { key: 'sot.ageSeconds', label: 'Throne intel', unit: 'age' }],
+  Spells: [{ key: 'sot.wpa', label: 'rWpa' }, { key: 'calcs.modOffWpa', label: 'mWpa (off)' }, { key: 'calcs.modDefWpa', label: 'mWpa (def)' }, { key: 'sot.goodSpells', label: 'Beneficial spells', unit: 'spells' }, { key: 'sot.badSpells', label: 'Harmful spells', unit: 'spells' }, { key: 'sot.cooldown', label: 'Cooldowns', unit: 'spells' }, { key: 'sot.mana', label: 'Mana', unit: '%' }, { key: 'sot.ageSeconds', label: 'Throne intel', unit: 'age' }],
   Survey: [],
   Science: [],
 };
@@ -21,7 +22,20 @@ const records = (value: unknown): Record<string, unknown>[] => Array.isArray(val
 const cellValue = (p: IntelProvince, c: Column) => c.value ? c.value(p) : get(p, c.key);
 const sortValue = (value: unknown) => Array.isArray(value) ? value.map(v => v && typeof v === 'object' ? `${fmt(v.name)} ${fmt(v.ticks)}` : fmt(v)).join(', ') : value;
 const duration = (seconds: unknown) => typeof seconds !== 'number' ? '—' : `${Math.floor(Math.max(0, seconds) / 3600)}h ${Math.floor(Math.max(0, seconds) % 3600 / 60)}m`;
-function ArmiesAway({ province }: { province: IntelProvince }) {
+function armySummary(province: IntelProvince): string | null {
+  const armies = get(province, 'som.armiesAway');
+  if (!Array.isArray(armies)) {
+    const report = get(province, 'sot.army');
+    return typeof report === 'string' && report.trim() ? report.trim() : null;
+  }
+  if (!armies.length) return 'No armies away';
+  return armies.map(army => {
+    const seconds = army?.secondsRemaining;
+    const time = typeof seconds === 'number' ? `${Math.floor(Math.max(0, seconds) / 3600)}h${String(Math.floor(Math.max(0, seconds) % 3600 / 60)).padStart(2, '0')}` : '—';
+    return `${time}(${fmt(army?.land)}a)`;
+  }).join('|');
+}
+function ArmiesAway({ province, selected }: { province: IntelProvince; selected: string[] }) {
   const value = get(province, 'som.armiesAway');
   if (!Array.isArray(value)) return <p className={styles.armyEmpty}>#{province.id} · Away-army intel unavailable.</p>;
   if (!value.length) return <p className={styles.armyEmpty}>#{province.id} · No armies away.</p>;
@@ -32,13 +46,13 @@ function ArmiesAway({ province }: { province: IntelProvince }) {
   ];
   // Retain every returned army and any additional fields without combining them.
   const extras = Array.from(new Set(records(value).flatMap(army => Object.keys(army)))).filter(key => !fields.some(([field]) => field === key));
-  const columns = [...fields, ...extras.map(key => [key, label(key)])];
+  const columns = [...fields, ...extras.map(key => [key, label(key)])].filter(([key]) => selected.includes(`away:${key}`));
   return <div className={styles.awayArmies}>
     <p>Armies away · #{province.id} {province.name}<small>Return times as reported at fetch</small></p>
     <DragScroll role="region" aria-label={`Armies away for ${province.name}`}><table className={styles.awayArmyTable}>
       <caption className={styles.srOnly}>Individual armies away for #{province.id} {province.name}</caption>
       <thead><tr><th scope="col">Army</th>{columns.map(([key, title]) => <th scope="col" key={key}>{title}</th>)}</tr></thead>
-      <tbody>{value.map((army, index) => <tr key={index}><th scope="row">Army {index + 1}</th>{columns.map(([key]) => <td key={key}>{key === 'secondsRemaining' && typeof army?.[key] === 'number' ? `${duration(army[key])} ${Math.floor(Math.max(0, army[key]) % 60)}s` : <Fields value={army?.[key]} />}</td>)}</tr>)}</tbody>
+      <tbody>{value.map((army, index) => <tr key={index}><th scope="row">Army {index + 1}</th>{columns.map(([key]) => <td key={key} className={key === 'secondsRemaining' ? styles.armyReturn : undefined}>{key === 'secondsRemaining' && typeof army?.[key] === 'number' ? `${duration(army[key])} ${Math.floor(Math.max(0, army[key]) % 60)}s` : <Fields value={army?.[key]} />}</td>)}</tr>)}</tbody>
     </table></DragScroll>
   </div>;
 }
@@ -88,17 +102,38 @@ export default function Kingdom({ result, side, server = 1, location = '5:11' }:
   const k = result.kingdom;
   const provinces = useMemo(() => k?.provinces ?? [], [k]);
   const options = (path: string) => Array.from(new Set(provinces.map(p => get(p, path)).filter((v): v is string => typeof v === 'string' && !!v))).sort();
-  const columns = useMemo<Column[]>(() => {
-    if (view === 'Survey') {
-      const names = Array.from(new Set(provinces.flatMap(p => records(get(p, 'survey.buildings')).map(b => b.name)).filter((n): n is string => typeof n === 'string'))).sort();
-      return [{ key: 'survey.buildingEff', label: 'Building efficiency', unit: '%', value: p => typeof get(p, 'survey.buildingEff') === 'number' ? (get(p, 'survey.buildingEff') as number) * 100 : null }, { key: 'survey.availableWorkers', label: 'Workers' }, { key: 'survey.ageSeconds', label: 'Survey intel', unit: 'age' }, ...names.map(name => ({ key: `building:${name}`, label: name, unit: '%', value: (p: IntelProvince) => records(get(p, 'survey.buildings')).find(b => b.name === name)?.[surveyMetric] }))];
+  const catalog = useMemo(() => {
+    const names = Array.from(new Set(provinces.flatMap(p => records(get(p, 'survey.buildings')).map(b => b.name)).filter((n): n is string => typeof n === 'string'))).sort();
+    const types = Array.from(new Set(provinces.flatMap(p => records(get(p, 'sos.books')).map(b => b.type)).filter((n): n is string => typeof n === 'string'))).sort();
+    const allViews: Record<string, Column[]> = { ...views, Survey: [{ key: 'survey.buildingEff', label: 'Building efficiency', unit: '%', value: p => typeof get(p, 'survey.buildingEff') === 'number' ? (get(p, 'survey.buildingEff') as number) * 100 : null }, { key: 'survey.availableWorkers', label: 'Workers' }, { key: 'survey.ageSeconds', label: 'Survey intel', unit: 'age' }, ...names.map(name => ({ key: `building:${name}`, label: name, unit: '%', value: (p: IntelProvince) => records(get(p, 'survey.buildings')).find(b => b.name === name)?.[surveyMetric] }))], Science: [{ key: 'sos.allocatedBooks', label: 'Allocated books' }, { key: 'sos.unallocatedBooks', label: 'Unallocated books' }, { key: 'sos.ageSeconds', label: 'Science intel', unit: 'age' }, ...types.map(type => ({ key: `science:${type}`, label: type, unit: '%', value: (p: IntelProvince) => records(get(p, 'sos.books')).find(b => b.type === type)?.effect }))] };
+    const available = new Map<string, Column & { group: string; required?: boolean }>();
+    available.set('id', { key: 'id', label: '#', group: 'Identity' });
+    available.set('name', { key: 'name', label: 'Province', group: 'Identity', required: true });
+    for (const [group, list] of Object.entries(allViews)) for (const column of list) {
+      if (!available.has(column.key)) available.set(column.key, { ...column, group });
     }
-    if (view === 'Science') {
-      const types = Array.from(new Set(provinces.flatMap(p => records(get(p, 'sos.books')).map(b => b.type)).filter((n): n is string => typeof n === 'string'))).sort();
-      return [{ key: 'sos.allocatedBooks', label: 'Allocated books' }, { key: 'sos.unallocatedBooks', label: 'Unallocated books' }, { key: 'sos.ageSeconds', label: 'Science intel', unit: 'age' }, ...types.map(type => ({ key: `science:${type}`, label: type, unit: '%', value: (p: IntelProvince) => records(get(p, 'sos.books')).find(b => b.type === type)?.effect }))];
+    // Expose incoming and total building percentages alongside current values.
+    for (const name of names) for (const [metric, title] of [['pctCurr', 'Current'], ['pctInc', 'Incoming'], ['pctTot', 'Total']]) {
+      const key = 'buildingMetric:' + metric + ':' + name;
+      available.set(key, { key, label: name + ' (' + title + ')', group: 'Survey', unit: '%', value: p => records(get(p, 'survey.buildings')).find(b => b.name === name)?.[metric] });
     }
-    return views[view];
+    for (const key of discoverFields(provinces)) if (!available.has(key)) {
+      const parts = key.split('.');
+      const group = parts.length > 1 ? label(parts[0]) : 'Identity';
+      available.set(key, { key, label: parts.slice(parts.length > 1 ? 1 : 0).map(label).join(' / '), group, unit: provinces.some(p => { const v = get(p, key); return v !== null && typeof v === 'object'; }) ? 'details' : key.endsWith('ageSeconds') ? 'age' : undefined });
+    }
+    const armyKeys = Array.from(new Set(['generals', 'solds', 'oSpecs', 'elites', 'horses', 'land', 'ambush', 'secondsRemaining', ...provinces.flatMap(p => records(get(p, 'som.armiesAway')).flatMap(a => Object.keys(a)))]));
+    for (const key of armyKeys) available.set(`away:${key}`, { key: `away:${key}`, label: key === 'secondsRemaining' ? 'Return in' : label(key), group: 'Individual armies away' });
+    return { options: [...available.values()], defaults: ['id', 'name', ...allViews[view].map(c => c.key), ...(view === 'Army' ? armyKeys.map(key => `away:${key}`) : [])] };
   }, [view, provinces, surveyMetric]);
+  const layout = useColumnLayout('provinces:' + view, catalog.defaults);
+  const showId = layout.selected.includes('id');
+  const columns = layout.selected.filter(key => key !== 'id' && key !== 'name' && !key.startsWith('away:')).map(key => catalog.options.find(c => c.key === key)).filter((c): c is typeof catalog.options[number] => !!c);
+  const showArmies = layout.selected.some(key => key.startsWith('away:'));
+  function changeColumns(keys: string[]) {
+    layout.change(keys);
+    if (!keys.includes(sort.key)) setSort({ key: 'name', descending: false });
+  }
   const filtered = useMemo(() => provinces.filter(p => {
     const seconds = get(p, 'sot.ageSeconds');
     return (!search || [p.name, p.id, p.race, get(p, 'sot.ruler'), p.discord].some(v => String(v ?? '').toLowerCase().includes(search.toLowerCase())))
@@ -117,9 +152,9 @@ export default function Kingdom({ result, side, server = 1, location = '5:11' }:
   const activeFilters = !!(search || race || personality || freshness || minLand || maxLand);
   function reset() { setSearch(''); setRace(''); setPersonality(''); setFreshness(''); setMinLand(''); setMaxLand(''); }
   function exportCsv() {
-    const keys: Column[] = [{ key: 'id', label: '#' }, { key: 'name', label: 'Province' }, ...columns, ...(view === 'Army' ? [{ key: 'som.armiesAway', label: 'Individual armies away (JSON)' }] : [])];
+    const keys: Column[] = [...(showId ? [{ key: 'id', label: '#' }] : []), { key: 'name', label: 'Province' }, ...columns, ...(showArmies ? [{ key: 'som.armiesAway', label: 'Individual armies away (JSON)' }] : [])];
     const escape = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""').replace(/^[=+@\t\r]/, "'$&")}"`;
-    const csv = [keys.map(c => escape(c.label)).join(','), ...filtered.map(p => keys.map(c => { const value = cellValue(p, c); return escape(value !== null && typeof value === 'object' ? JSON.stringify(value) : value); }).join(','))].join('\r\n');
+    const csv = [keys.map(c => escape(c.label)).join(','), ...filtered.map(p => keys.map(c => { const value = c.ratio ? `${fmt(cellValue(p, c))} (${fmt(get(p, c.ratio))})` : cellValue(p, c); return escape(value !== null && typeof value === 'object' ? JSON.stringify(value) : value); }).join(','))].join('\r\n');
     const url = URL.createObjectURL(new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8' }));
     const a = document.createElement('a'); a.href = url; a.download = `kingdom-${k?.location.replace(':', '-')}-${view}.csv`; a.click(); URL.revokeObjectURL(url);
   }
@@ -130,6 +165,7 @@ export default function Kingdom({ result, side, server = 1, location = '5:11' }:
     <div className={styles.stats}>{[['Provinces', provinces.length, 'in this kingdom'], ['Total land', sum('land'), 'acres'], ['Total networth', sum('networth'), 'gold coins'], ['Fresh throne intel', provinces.filter(p => typeof get(p, 'sot.ageSeconds') === 'number' && (get(p, 'sot.ageSeconds') as number) < 3600).length, 'less than 1 hour old']].map(([title, value, note]) => <div key={title}><span>{title}</span><strong>{fmt(value)}</strong><small>{note}</small></div>)}</div>
     <section className={styles.panel} aria-label="Province explorer"><div className={styles.panelHeading}><div><h3>Province explorer</h3><p>Select a view, sort a column, or open a province for complete intel.</p></div><button className={styles.secondary} onClick={exportCsv}>Export filtered CSV ↓</button></div>
       <div className={styles.views} aria-label="Table view">{Object.keys(views).map(name => <button key={name} aria-pressed={view === name} onClick={() => { setView(name); setSort({ key: 'name', descending: false }); }}>{name}</button>)}</div>
+      <ColumnPicker options={catalog.options} selected={layout.selected} defaults={catalog.defaults} onChange={changeColumns} />
       {view === 'Survey' && <div className={styles.surveyControls}><label>Building percentages<select value={surveyMetric} onChange={e => setSurveyMetric(e.target.value)}><option value="pctCurr">Current buildings</option><option value="pctInc">Incoming construction</option><option value="pctTot">Total incl. construction</option></select></label></div>}
       {['Army', 'Spells', 'Survey', 'Science'].includes(view) && <p className={styles.viewHint}>{view === 'Army' ? 'Home troops are shown in the province row. Every army away is listed separately below it, with its own composition and return time.' : view === 'Spells' ? 'Spell durations are shown in game ticks. Expand a province for the complete throne report.' : view === 'Survey' ? 'Each building has a sortable percentage column. Expand a province for current, incoming and total construction side by side.' : 'Each science category shows its reported effect percentage. Expand a province for the complete science report.'}</p>}
       <div className={styles.filters}>
@@ -140,7 +176,7 @@ export default function Kingdom({ result, side, server = 1, location = '5:11' }:
         <label>Min. acres<input type="number" min="0" value={minLand} onChange={e => setMinLand(e.target.value)} placeholder="Any" /></label><label>Max. acres<input type="number" min="0" value={maxLand} onChange={e => setMaxLand(e.target.value)} placeholder="Any" /></label>
       </div>
       <div className={styles.results}><span aria-live="polite">Showing <b>{filtered.length}</b> of {provinces.length} provinces{activeFilters ? ' · Filters applied' : ''}</span>{activeFilters && <button onClick={reset}>Clear filters</button>}<span>— = unavailable intel</span></div>
-      <DragScroll tabIndex={0} role="region" aria-label={`${view} province table`}><table className={styles.provinceTable}><caption className={styles.srOnly}>{k.kingdomName || 'Unnamed kingdom'} · {view}. Click a column heading to sort.</caption><thead><tr>{([{ key: 'id', label: '#' }, { key: 'name', label: 'Province' }, ...columns] as Column[]).map(c => <th key={c.key} scope="col" aria-sort={sort.key === c.key ? sort.descending ? 'descending' : 'ascending' : 'none'}><button onClick={() => setSort({ key: c.key, descending: sort.key === c.key ? !sort.descending : false })}>{c.label}<span aria-hidden="true">{sort.key === c.key ? sort.descending ? ' ↓' : ' ↑' : ' ↕'}</span>{c.unit && <small>{c.unit === 'age' ? 'age at fetch' : c.unit}</small>}</button></th>)}</tr></thead><tbody>{filtered.map(p => <Fragment key={p.id}><tr className={expanded === p.id ? styles.selected : ''}><td className={styles.idCell}>{p.id}</td><th scope="row"><button className={styles.provinceButton} aria-expanded={expanded === p.id} aria-controls={`province-${side}-${p.id}`} onClick={() => setExpanded(expanded === p.id ? null : p.id)}><span>{p.name}<small>{fmt(p.title)}</small></span><span aria-hidden="true">{expanded === p.id ? '−' : '+'}</span></button></th>{columns.map(c => <td key={c.key} className={typeof cellValue(p, c) === 'number' ? styles.numeric : ''}>{c.unit === 'spells' ? <SpellList value={cellValue(p, c)} /> : c.unit === 'duration' ? duration(cellValue(p, c)) : c.unit === 'age' ? <span className={typeof cellValue(p, c) !== 'number' ? styles.muted : (cellValue(p, c) as number) < 3600 ? styles.fresh : styles.stale}>{age(cellValue(p, c))}</span> : fmt(cellValue(p, c))}{c.unit === '%' && typeof cellValue(p, c) === 'number' ? '%' : ''}</td>)}</tr>{view === 'Army' && <tr><td colSpan={columns.length + 2} className={styles.armiesCell}><ArmiesAway province={p} /></td></tr>}<tr hidden={expanded !== p.id} id={`province-${side}-${p.id}`}><td colSpan={columns.length + 2}>{expanded === p.id && <ProvinceDetails province={p} view={view} />}</td></tr></Fragment>)}</tbody></table></DragScroll>
+      <DragScroll tabIndex={0} role="region" aria-label={`${view} province table`}><table className={styles.provinceTable}><caption className={styles.srOnly}>{k.kingdomName || 'Unnamed kingdom'} · {view}. Click a column heading to sort.</caption><thead><tr>{([...(showId ? [{ key: 'id', label: '#' }] : []), { key: 'name', label: 'Province' }, ...columns] as Column[]).map(c => <th key={c.key} scope="col" aria-sort={sort.key === c.key ? sort.descending ? 'descending' : 'ascending' : 'none'}><button onClick={() => setSort({ key: c.key, descending: sort.key === c.key ? !sort.descending : false })}>{c.label}<span aria-hidden="true">{sort.key === c.key ? sort.descending ? ' ↓' : ' ↑' : ' ↕'}</span>{c.unit && <small>{c.unit === 'age' ? 'age at fetch' : c.unit}</small>}</button></th>)}</tr></thead><tbody>{filtered.map((p, index) => <Fragment key={p.id}><tr className={`${styles.provinceRow} ${expanded === p.id ? styles.selected : ''}`} data-tone={index % 2 ? 'alternate' : 'base'}>{showId && <td className={styles.idCell}>{p.id}</td>}<th scope="row"><button className={styles.provinceButton} aria-expanded={expanded === p.id} aria-controls={`province-${side}-${p.id}`} onClick={() => setExpanded(expanded === p.id ? null : p.id)}><span>{p.name}<small>{fmt(p.title)}</small></span><span aria-hidden="true">{expanded === p.id ? '−' : '+'}</span></button></th>{columns.map(c => <td key={c.key} className={typeof cellValue(p, c) === 'number' ? styles.numeric : ''}>{c.ratio ? `${fmt(cellValue(p, c))} (${fmt(get(p, c.ratio))})` : c.unit === 'details' ? <Fields value={cellValue(p, c)} /> : c.unit === 'spells' ? <SpellList value={cellValue(p, c)} /> : c.unit === 'duration' ? duration(cellValue(p, c)) : c.unit === 'age' ? <span className={typeof cellValue(p, c) !== 'number' ? styles.muted : (cellValue(p, c) as number) < 3600 ? styles.fresh : styles.stale}>{age(cellValue(p, c))}</span> : fmt(cellValue(p, c))}{c.unit === '%' && typeof cellValue(p, c) === 'number' ? '%' : ''}</td>)}</tr>{showArmies && <tr className={styles.armyGroupRow} data-tone={index % 2 ? 'alternate' : 'base'}><td colSpan={columns.length + 1 + (showId ? 1 : 0)} className={styles.armiesCell}><ArmiesAway province={p} selected={layout.selected} /></td></tr>}<tr hidden={expanded !== p.id} id={`province-${side}-${p.id}`}><td colSpan={columns.length + 1 + (showId ? 1 : 0)}>{expanded === p.id && <ProvinceDetails province={p} view={view} />}</td></tr></Fragment>)}</tbody></table></DragScroll>
       {!filtered.length && <div className={styles.empty}><h3>No provinces match</h3><p>Try a broader search or clear your filters.</p><button className={styles.secondary} onClick={reset}>Clear filters</button></div>}
     </section>
     <details className={styles.metadata}><summary>Kingdom metadata & full response</summary><Fields value={Object.fromEntries(Object.entries(result.response ?? {}).filter(([key]) => key !== 'kingdom'))} /><Fields value={Object.fromEntries(Object.entries(k).filter(([key]) => key !== 'provinces'))} /><a href={`/api/kingdom-intel?side=${side}&server=${server}&location=${encodeURIComponent(location)}`} target="_blank" rel="noreferrer">Open complete JSON ↗</a></details>
