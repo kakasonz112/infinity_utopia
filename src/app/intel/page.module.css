@@ -184,3 +184,85 @@
 .columnGroups label { display: flex; align-items: start; gap: 8px; margin-bottom: 7px; cursor: pointer; overflow-wrap: anywhere; }
 .columnGroups input { accent-color: #80e2cb; margin-top: 3px; flex-shrink: 0; }
 @media (max-width: 700px) { .columnPicker { margin: 12px; } .columnGroups { grid-template-columns: 1fr; } }
+.page[data-split=true] { max-width: none; }
+.splitToggle { display: flex; align-items: center; gap: 10px; cursor: pointer; color: #e1eaf5; font-size: .83rem; }
+.splitToggle input { width: 18px; height: 18px; accent-color: #9cbde5; }
+.splitToggle small { display: block; color: var(--muted); font-size: .7rem; margin-top: 2px; }
+.splitGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; margin-top: 20px; align-items: start; }
+.splitPane { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: #101b2a; }
+.paneHeading { font-size: .85rem; font-weight: 600; color: #c1d6ee; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.splitPane .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.splitPane .stats > div { padding: 12px 16px; }
+.splitPane .stats strong { font-size: 1.6rem; }
+.splitPane .filters { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 16px; }
+.splitPane .search { grid-column: span 2; }
+.splitPane .kingdomHeader { flex-wrap: wrap; gap: 16px; padding-top: 20px; }
+.splitPane .kingdomHeader h2 { font-size: 1.4rem; }
+.splitPane .panelHeading { padding: 16px; }
+.splitPane .views { padding: 0 16px; gap: 18px; }
+.splitPane .results { padding: 0 16px 16px; }
+.splitPane .detailGrid { grid-template-columns: 1fr; }
+.splitPane .detailContent { padding: 16px; }
+.splitPane .queryForm input { max-width: 100%; }
+.provinceIdentity { display: flex; align-items: center; gap: 7px; }
+.highlightButton { flex-shrink: 0; border: 0; background: transparent; color: #9aaec4; font-size: 1rem !important; padding: 4px 2px; line-height: 1; border-radius: 3px; }
+.highlightButton[aria-pressed=true] { color: #bcd9ff; }
+.provinceTable > tbody > tr[data-highlighted=true], .provinceTable > tbody > tr[data-highlighted=true]:hover { background: #304965; }
+.provinceTable > tbody > tr[data-highlighted=true] > :first-child { box-shadow: inset 3px 0 #9cc4f3; }
+.provinceTable > tbody > tr[data-highlighted=true] .provinceButton { color: #f5f8ff; }
+@media (max-width: 900px) { .splitGrid { grid-template-columns: 1fr; } .splitPane { padding: 12px; } }
+/* Combat data uses a consistent palette: own blue, enemy orange, time gold, acres mint. */
+.page { --table-bg: #142131; --table-alt: #22364b; --table-head: #314b66; --table-text: #f5f8ff; --table-muted: #c6d3e1; --table-divider: #506882; }
+.provinceTable > tbody > tr[data-highlighted=true], .provinceTable > tbody > tr[data-highlighted=true]:hover { background: #3c587a; }
+.provinceTable td[data-stat=offense] { color: #ffb9a9; }
+.provinceTable td[data-stat=defense] { color: #a5d6ff; }
+.returnTime { color: #ffdf91; font-weight: 600; font-variant-numeric: tabular-nums; }
+.incomingLand { color: #8ce8c1; font-weight: 600; font-variant-numeric: tabular-nums; }
+.armyPipe { color: #a8bcd1; }
+.returnSummary { white-space: nowrap; font-size: .76rem; }
+.battleOverview { margin: 20px 0 28px; }
+.distribution, .faceOff { border: 1px solid #506780; background: #142131; border-radius: 10px; margin-bottom: 20px; overflow: hidden; }
+.chartLegend { display: flex; flex-wrap: wrap; gap: 16px; font-size: .78rem; color: #f3b5ff; }
+.chartLegend [data-side=own] { color: #68caff; }
+.chartLegend [data-side=enemy] { color: #ffb383; }
+.distributionGraph { padding: 0 12px; max-width: 1100px; margin: 0 auto; }
+.distributionGraph svg { width: 100%; height: 180px; display: block; }
+.distributionToggle { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 20px; padding: 12px 16px; cursor: pointer; color: #f5f8ff; font-size: .88rem; font-weight: 600; background: #22364b; }
+.distributionToggle > span:first-child { margin-right: auto; }
+.distributionToggle small { display: block; margin-top: 3px; color: #c5d5e6; font-size: .68rem; font-weight: 400; }
+.distributionToggle::after { content: 'Show'; color: #c5d5e6; font-size: .72rem; font-weight: 400; }
+.distribution[open] > .distributionToggle::after { content: 'Hide'; }
+.distribution .chartLegend { font-size: .72rem; gap: 12px; font-weight: 400; }
+.distribution .chartHelp { margin: 6px 16px 10px; font-size: .68rem; }
+.distribution .outlierList { margin: 8px 16px; font-size: .72rem; }
+.distributionGraph circle { cursor: pointer; }
+.distributionGraph circle:focus-visible { outline: 2px solid white; }
+.axisLabel { fill: #d0dfef; font-size: 12px; }
+.chartHelp { font-size: .75rem; color: #bfcee0; margin: 12px 22px 18px; }
+.dotDetails { padding: 12px 16px; margin: 12px 22px; border-left: 3px solid #a5c9f5; background: #24394f; font-size: .8rem; color: white; }
+.outlierList { margin: 12px 22px; font-size: .78rem; color: #f1c4ff; }
+.outlierList summary { cursor: pointer; margin-bottom: 10px; }
+.outlierList button { display: block; border: 0; background: none; text-align: left; padding: 5px 0; color: #e8d4f4; font-size: .75rem; }
+.faceOff > summary { cursor: pointer; color: #f5f8ff; padding: 16px 22px; font-size: 1rem; font-weight: 600; background: #22364b; }
+.faceOff > summary > span { margin-left: 14px; color: #c5d5e6; font-size: .75rem; font-weight: 400; }
+.faceControls { display: grid; grid-template-columns: 1fr 1fr minmax(170px, .7fr); gap: 16px; padding: 20px 22px; }
+.faceControls label { display: flex; flex-direction: column; gap: 7px; color: #d0dfef; font-size: .75rem; min-width: 0; }
+.faceControls select { min-width: 0; width: 100%; padding: 10px; border: 1px solid #69829c; background: #0d1b2c; color: #f5f8ff; border-radius: 5px; font-size: .8rem; }
+.faceGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; padding: 0 22px 8px; }
+.faceProvince, .powerCard { padding: 18px; background: #1c2e43; border: 1px solid #4b647f; border-top: 3px solid #68caff; border-radius: 6px; min-width: 0; }
+.faceProvince[data-side=enemy], .powerCard[data-side=enemy] { border-top-color: #ffb383; }
+.faceProvince h4, .powerCard h4 { font-size: .88rem; color: #f5f8ff; margin: 0 0 14px; font-weight: 600; }
+.faceProvince dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; }
+.faceProvince dt { font-size: .7rem; color: #bfd0e2; }
+.faceProvince dd { margin: 4px 0 0; font-size: 1rem; color: #f5f8ff; font-variant-numeric: tabular-nums; }
+.faceProvince small { display: block; color: #bfd0e2; font-size: .7rem; margin-top: 12px; }
+.faceProvince .returnSummary { display: block; overflow-x: auto; padding-bottom: 4px; }
+.powerCard > div:first-of-type { display: flex; align-items: baseline; flex-wrap: wrap; gap: 9px; }
+.powerCard strong { color: #f5f8ff; font-size: 1.4rem; }
+.powerCard span, .powerCard p { color: #c9d9ea; font-size: .76rem; }
+.powerCard p { margin: 10px 0; }
+.powerCard b { color: #eaf3ff; }
+.powerTrack { height: 7px; border-radius: 5px; background: #0d1b2c; overflow: hidden; }
+.powerTrack > span { display: block; height: 100%; background: #68caff; }
+.powerCard[data-side=enemy] .powerTrack > span { background: #ffb383; }
+@media (max-width: 700px) { .faceGrid, .faceControls { grid-template-columns: 1fr; padding-left: 12px; padding-right: 12px; } .faceProvince dl { grid-template-columns: repeat(2, minmax(0, 1fr)); } .distributionGraph { padding: 0; } .faceOff > summary > span { display: block; margin: 6px 0 0; } }
