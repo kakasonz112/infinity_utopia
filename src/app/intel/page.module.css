@@ -266,3 +266,17 @@
 .powerTrack > span { display: block; height: 100%; background: #68caff; }
 .powerCard[data-side=enemy] .powerTrack > span { background: #ffb383; }
 @media (max-width: 700px) { .faceGrid, .faceControls { grid-template-columns: 1fr; padding-left: 12px; padding-right: 12px; } .faceProvince dl { grid-template-columns: repeat(2, minmax(0, 1fr)); } .distributionGraph { padding: 0; } .faceOff > summary > span { display: block; margin: 6px 0 0; } }
+.selectedArmyProvince { margin: 12px 16px; padding: 14px; background: #1c3047; border: 1px solid #7699be; border-radius: 7px; }
+.selectedArmyHeading { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.selectedArmyHeading strong { color: #f5f8ff; font-size: .85rem; }
+.selectedArmyHeading small { display: block; margin-top: 4px; color: #c3d4e6; font-size: .7rem; }
+.homeArmyMetrics { display: flex; flex-wrap: wrap; gap: 20px 36px; margin: 16px 0; }
+.homeArmyMetrics dt { color: #c3d4e6; font-size: .73rem; }
+.homeArmyMetrics dd { margin: 4px 0 0; font-size: 1.15rem; color: #f5f8ff; font-variant-numeric: tabular-nums; }
+.selectedArmyTable { width: 100%; border-collapse: collapse; font-size: .75rem; white-space: nowrap; }
+.selectedArmyTable caption { text-align: left; color: #c3d4e6; padding-bottom: 10px; font-size: .7rem; }
+.selectedArmyTable th, .selectedArmyTable td { text-align: left; padding: 8px; border-bottom: 1px solid #47607a; font-variant-numeric: tabular-nums; }
+.selectedArmyTable thead th { color: #dce8f6; background: #29435e; font-size: .7rem; font-weight: 500; }
+.selectedArmyTable tbody th { font-weight: 500; }
+.selectedArmyTable tr[data-chosen=true] { background: #345476; }
+.selectedArmyTable tbody th small { display: block; color: #c8e2ff; font-size: .65rem; margin-top: 2px; }

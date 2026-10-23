@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import type { IntelKingdom, IntelProvince } from '@/lib/utopiaIntel';
 import { compact, defenseHome, field, numeric, relative, returnLabel, returnPoints, type ArmyPoint } from './combatModel';
 import styles from './page.module.css';
+import DragScroll from './DragScroll';
 
 export function ArmySummary({ province }: { province: IntelProvince }) {
   const armies = field(province, 'som.armiesAway');
@@ -22,7 +23,20 @@ function ProvinceCard({ p, side }: { p?: IntelProvince; side: 'own' | 'enemy' })
   const age = numeric(field(p, 'som.ageSeconds'));
   return <div className={styles.faceProvince} data-side={side}><h4>#{p.id} {p.name}</h4><dl><div><dt>Networth</dt><dd>{compact(p.networth)}</dd></div><div><dt>Offense / OPA</dt><dd>{compact(field(p, 'sot.offPoints'))} / {String(field(p, 'sot.opa') ?? '—')}</dd></div><div><dt>Defense / DPA</dt><dd>{compact(field(p, 'sot.defPoints'))} / {String(field(p, 'sot.dpa') ?? '—')}</dd></div><div><dt>Offense home</dt><dd>{compact(field(p, 'som.offPointsHome'))}</dd></div><div><dt>Defense home</dt><dd>{compact(defenseHome(p))}</dd></div><div><dt>Incoming acres</dt><dd className={styles.incomingLand}>{Array.isArray(armyList) && (armyList.length === 0 || incoming.length > 0) ? incoming.reduce((a, b) => a + b, 0).toLocaleString() + 'a' + (incoming.length < armyList.length ? ' + unknown' : '') : '—'}</dd></div></dl><ArmySummary province={p} /><small>Military report age: {age === null ? 'unknown' : returnLabel(age / 3600)}</small></div>;
 }
-function ReturnDistribution({ own, enemy }: { own: IntelKingdom | null; enemy: IntelKingdom | null }) {
+export function SelectedArmyProvince({ province, side, selectedArmy, clear }: { province: IntelProvince; side: 'own' | 'enemy'; selectedArmy: number; clear: () => void }) {
+  const raw = field(province, 'som.armiesAway');
+  const armies = Array.isArray(raw) ? raw : [];
+  const generals = numeric(field(province, 'som.standingArmy.generals'));
+  const offense = numeric(field(province, 'som.offPointsHome'));
+  const age = numeric(field(province, 'som.ageSeconds'));
+  const count = (value: unknown) => numeric(value)?.toLocaleString('en-US') ?? '—';
+  return <section className={styles.selectedArmyProvince} aria-label="Selected province armies" aria-live="polite">
+    <div className={styles.selectedArmyHeading}><div><strong>{side === 'own' ? 'Own' : 'Enemy'} · #{province.id} {province.name}</strong><small>Military report age: {age === null ? 'unknown' : returnLabel(age / 3600)}</small></div><button type="button" className={styles.secondary} onClick={clear}>Clear selection</button></div>
+    <dl className={styles.homeArmyMetrics}><div><dt>Offense remaining at home</dt><dd title={offense === null ? undefined : offense.toLocaleString('en-US')}>{compact(offense)}</dd></div><div><dt>Generals remaining at home</dt><dd>{count(generals)}</dd></div></dl>
+    <DragScroll tabIndex={0} role="region" aria-label={`All armies away for ${province.name}`}><table className={styles.selectedArmyTable}><caption>All armies away ({armies.length}) · Each army is listed separately</caption><thead><tr><th scope="col">Army</th><th scope="col">Return in</th><th scope="col">Incoming acres</th><th scope="col">Generals</th><th scope="col">Soldiers</th><th scope="col">Off. specs</th><th scope="col">Elites</th><th scope="col">Horses</th></tr></thead><tbody>{armies.map((army, index) => <tr key={index} data-chosen={index + 1 === selectedArmy ? 'true' : undefined}><th scope="row">Army {index + 1}{index + 1 === selectedArmy && <small>Selected</small>}</th><td className={styles.returnTime}>{numeric(army?.secondsRemaining) === null || army.secondsRemaining < 0 ? 'Unknown' : returnLabel(Math.max(0, army.secondsRemaining) / 3600)}</td><td className={styles.incomingLand}>{count(army?.land)}a</td><td>{count(army?.generals)}</td><td>{count(army?.solds)}</td><td>{count(army?.oSpecs)}</td><td>{count(army?.elites)}</td><td>{count(army?.horses)}</td></tr>)}</tbody></table></DragScroll>
+  </section>;
+}
+export function ReturnDistribution({ own, enemy }: { own: IntelKingdom | null; enemy: IntelKingdom | null }) {
   const points = useMemo(() => [...returnPoints(own, 'own'), ...returnPoints(enemy, 'enemy')], [own, enemy]);
   const [chosen, setChosen] = useState<ArmyPoint | null>(null);
   const domain = Math.max(1, Math.ceil(Math.max(0, ...points.map(p => p.hours))));
@@ -33,7 +47,7 @@ function ReturnDistribution({ own, enemy }: { own: IntelKingdom | null; enemy: I
   const x = (hours: number) => 70 + hours / domain * 900;
   const ownCount = points.filter(p => p.side === 'own').length;
   const outliers = points.filter(p => p.outlier);
-  const currentChoice = chosen ? points.find(p => p.side === chosen.side && p.provinceId === chosen.provinceId && p.army === chosen.army) : undefined;
+  const selectedProvince = chosen ? (chosen.side === 'own' ? own : enemy)?.provinces.find(p => p.id === chosen.provinceId) : undefined;
   const description = (p: ArmyPoint) => `${p.side === 'own' ? 'Own' : 'Enemy'} #${p.provinceId} ${p.province}, army ${p.army}: ${returnLabel(p.hours)}, ${p.acres ?? 'unknown'} incoming acres${p.outlier ? ', timing outlier' : ''}`;
   return <details className={styles.distribution} open><summary className={styles.distributionToggle}><span>Army return distribution<small>{binHours}h intervals ? lines show army counts</small></span><span className={styles.chartLegend}><span data-side="own">Own ({ownCount})</span><span data-side="enemy">Enemy ({points.length - ownCount})</span><span>Outliers ({outliers.length})</span></span></summary>
     {!points.length ? <p className={styles.empty}>No armies with valid return times were reported.</p> : <>
@@ -43,11 +57,11 @@ function ReturnDistribution({ own, enemy }: { own: IntelKingdom | null; enemy: I
         {(['own', 'enemy'] as const).map(side => <polyline key={side} data-series={side} fill="none" stroke={side === 'own' ? '#68caff' : '#ffb383'} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" points={bins.length === 1 ? [[70, 120 - bins[0][side] / maxCount * 95], [970, 120 - bins[0][side] / maxCount * 95]].map(pair => pair.join(',')).join(' ') : bins.map(bin => [x(Math.min(domain, bin.start + binHours / 2)), 120 - bin[side] / maxCount * 95].join(',')).join(' ')}><title>{side === 'own' ? 'Own kingdom army counts' : 'Enemy kingdom army counts'}</title></polyline>)}
         <text x="12" y="154" className={styles.axisLabel}>Own</text><text x="12" y="178" className={styles.axisLabel}>Enemy</text>
         <line x1="70" y1="150" x2="970" y2="150" stroke="#33475c" /><line x1="70" y1="174" x2="970" y2="174" stroke="#33475c" />
-        {points.map(p => { const y = (p.side === 'own' ? 150 : 174) + ((p.provinceId * 7 + p.army * 5) % 13 - 6); return <circle key={`${p.side}-${p.provinceId}-${p.army}`} cx={x(p.hours)} cy={y} r={p.outlier ? 5 : 3.5} fill={p.side === 'own' ? '#68caff' : '#ffb383'} stroke={p.outlier ? '#f3b5ff' : '#142234'} strokeWidth={p.outlier ? 3 : 1} tabIndex={0} role="button" aria-label={description(p)} onClick={() => setChosen(p)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChosen(p); } }}><title>{description(p)}</title></circle>; })}
+        {points.map(p => { const highlighted = !!selectedProvince && chosen?.side === p.side && chosen.provinceId === p.provinceId; const y = (p.side === 'own' ? 150 : 174) + ((p.provinceId * 7 + p.army * 5) % 13 - 6); return <circle key={`${p.side}-${p.provinceId}-${p.army}`} cx={x(p.hours)} cy={y} r={highlighted ? 6 : p.outlier ? 5 : 3.5} fill={p.side === 'own' ? '#68caff' : '#ffb383'} stroke={highlighted ? '#ffffff' : p.outlier ? '#f3b5ff' : '#142234'} strokeWidth={highlighted || p.outlier ? 3 : 1} aria-pressed={highlighted} tabIndex={0} role="button" aria-label={description(p)} onClick={() => setChosen(p)} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setChosen(p); } }}><title>{description(p)}</title></circle>; })}
         {Array.from({ length: 7 }, (_, i) => { const h = domain / 6 * i; return <text key={i} x={x(h)} y="205" textAnchor="middle" className={styles.axisLabel}>{Number(h.toFixed(1))}h</text>; })}
       </svg></div>
-      <p className={styles.chartHelp}>Hover or select a dot for province details. Return times are as reported at fetch, not a live countdown.</p>
-      {currentChoice && <p className={styles.dotDetails}>{description(currentChoice)} · Military report age: {currentChoice.intelAge === null ? 'unknown' : returnLabel(currentChoice.intelAge / 3600)}</p>}
+      <p className={styles.chartHelp}>Select an army to see all armies from that province and troops remaining at home. Return times are as reported at fetch, not a live countdown.</p>
+      {chosen && selectedProvince && <SelectedArmyProvince province={selectedProvince} side={chosen.side} selectedArmy={chosen.army} clear={() => setChosen(null)} />}
       {outliers.length > 0 && <details className={styles.outlierList}><summary>Timing outliers ({outliers.length})</summary>{outliers.map(p => <button key={`${p.side}-${p.provinceId}-${p.army}`} onClick={() => setChosen(p)}>{description(p)}</button>)}</details>}
     </>}
     <p className={styles.chartHelp}>Military report coverage: own {own ? `${own.provinces.filter(p => Array.isArray(field(p, 'som.armiesAway'))).length}/${own.provinces.length} provinces` : 'kingdom intel unavailable'}; enemy {enemy ? `${enemy.provinces.filter(p => Array.isArray(field(p, 'som.armiesAway'))).length}/${enemy.provinces.length} provinces` : 'kingdom intel unavailable'}.</p>

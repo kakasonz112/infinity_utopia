@@ -2,7 +2,8 @@
 const {renderToStaticMarkup}=require('react-dom/server');
 function load(file,overrides={}){const code=ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2020,esModuleInterop:true}}).outputText;const m={exports:{}};new Function('require','module','exports',code)(name=>name.endsWith('.css')?{__esModule:true,default:new Proxy({},{get:(_,key)=>String(key)})}:overrides[name]??require(name),m,m.exports);return m.exports;}
 const model=load('src/app/intel/combatModel.ts');
-const ui=load('src/app/intel/BattleOverview.tsx',{'./combatModel':model});
+const drag={__esModule:true,default:({children,...props})=>React.createElement('div',props,children)};
+const ui=load('src/app/intel/BattleOverview.tsx',{'./combatModel':model,'./DragScroll':drag});
 const kingdom=(hours,side='own')=>({kingdomName:side,location:side==='own'?'5:9':'5:11',provinces:[{id:11,name:side+' province',networth:123456,sot:{offPoints:50000,opa:100,defPoints:40000,dpa:80},som:{offPointsHome:10000,defPointsHome:40000,ageSeconds:120,armiesAway:hours.map((h,index)=>({secondsRemaining:h*3600,land:index+10}))}}]});
 test('compact formatting preserves zero, handles missing values and never abbreviates per-acre ratios',()=>{assert.equal(model.compact(53764),'53.8k');assert.equal(model.compact(0),'0');assert.equal(model.compact(null),'—');assert.equal(model.compact(NaN),'—');assert.equal(model.compactField('networth'),true);assert.equal(model.compactField('som.offPointsHome'),true);assert.equal(model.compactField('sot.opa'),false);});
 test('relative offense handles missing and zero defense without inventing an infinite ratio',()=>{assert.equal(model.relative(50000,40000),1.25);assert.equal(model.relative(0,40000),0);assert.equal(model.relative(50000,0),null);assert.equal(model.relative(null,40000),null);assert.equal(model.defenseHome({som:{defPointsHome:200},calcs:{defPointsSummary:{defPointsHome:0}}}),0);});
@@ -10,3 +11,22 @@ test('every army remains separate, including duplicate return times, and invalid
 test('IQR outliers are computed independently per kingdom with no false small-sample flags',()=>{const own=model.returnPoints(kingdom([1,2,2,2,2,3,3,20]),'own');assert.deepEqual(own.filter(p=>p.outlier).map(p=>p.hours),[20]);assert.ok(model.returnPoints(kingdom([10,11,12,13],'enemy'),'enemy').every(p=>!p.outlier));assert.ok(model.returnPoints(kingdom([1,1,20]),'own').every(p=>!p.outlier));assert.equal(model.returnLabel(26700/3600),'7h25');});
 test('face-off renders two directional power comparisons, individual return times and a dot per army',()=>{const own=kingdom([1,2,2,2,2,3,3,20]),enemy=kingdom([3,4],'enemy');const html=renderToStaticMarkup(React.createElement(ui.default,{own,enemy}));assert.match(html,/125.0%/);assert.match(html,/Own offense/);assert.match(html,/Enemy offense/);assert.match(html,/Timing outliers \(1\)/);assert.equal((html.match(/<circle /g)||[]).length,10);assert.equal((html.match(/<polyline /g)||[]).length,2);assert.doesNotMatch(html,/<rect /);assert.match(html,/<details class="distribution" open=""><summary class="distributionToggle">/);assert.match(html,/class="returnTime"/);assert.match(html,/class="incomingLand"/);assert.match(html,/Military report coverage/);assert.match(html,/50k/);});
 test('missing kingdom intel produces coverage messages and an empty chart, rather than fabricated armies',()=>{const html=renderToStaticMarkup(React.createElement(ui.default,{own:null,enemy:null}));assert.match(html,/No armies with valid return times/);assert.match(html,/kingdom intel unavailable/);assert.doesNotMatch(html,/<circle /);assert.match(html,/missing intel/);});
+test('selecting a plotted army highlights all same-province armies and reveals home strength plus every away army',()=>{
+  let selected=null;
+  const local=load('src/app/intel/BattleOverview.tsx',{'./combatModel':model,'./DragScroll':drag,react:{...React,useMemo:fn=>fn(),useState:initial=>[selected,value=>{selected=value;}]}});
+  const own=kingdom([1,2,3]),enemy=kingdom([4,5],'enemy');own.provinces[0].som.standingArmy={generals:2};
+  own.provinces[0].som.armiesAway.push({land:75,generals:1});
+  function elements(node,match,out=[]){if(!node||typeof node!=='object')return out;if(match(node))out.push(node);React.Children.forEach(node.props?.children,child=>elements(child,match,out));return out;}
+  let tree=local.ReturnDistribution({own,enemy});
+  const dot=elements(tree,n=>n.type==='circle'&&n.props['aria-label'].startsWith('Own')&&n.props['aria-label'].includes('army 2:'))[0];
+  dot.props.onClick();tree=local.ReturnDistribution({own,enemy});
+  const dots=elements(tree,n=>n.type==='circle');assert.equal(dots.filter(n=>n.props['aria-pressed']).length,3);assert.ok(dots.filter(n=>n.props['aria-label'].startsWith('Enemy')).every(n=>!n.props['aria-pressed']));
+  const html=renderToStaticMarkup(tree);assert.match(html,/Offense remaining at home/);assert.match(html,/>10k</);assert.match(html,/Generals remaining at home<\/dt><dd>2/);assert.match(html,/All armies away \(4\)/);assert.match(html,/<th scope="row">Army 4/);assert.match(html,/Unknown/);assert.match(html,/data-chosen="true"><th scope="row">Army 2/);
+  elements(tree,n=>n.type===local.SelectedArmyProvince)[0].props.clear();assert.equal(selected,null);
+});
+test('missing home intel stays unavailable while known zero offense and generals remain zero',()=>{
+  const p=kingdom([1]).provinces[0];p.som.offPointsHome=0;p.som.standingArmy={generals:0};
+  let html=renderToStaticMarkup(React.createElement(ui.SelectedArmyProvince,{province:p,side:'own',selectedArmy:1,clear:()=>{}}));assert.match(html,/Generals remaining at home<\/dt><dd>0/);assert.match(html,/title="0">0<\/dd>/);
+  delete p.som.offPointsHome;delete p.som.standingArmy;
+  html=renderToStaticMarkup(React.createElement(ui.SelectedArmyProvince,{province:p,side:'enemy',selectedArmy:1,clear:()=>{}}));assert.match(html,/Generals remaining at home<\/dt><dd>—/);
+});
