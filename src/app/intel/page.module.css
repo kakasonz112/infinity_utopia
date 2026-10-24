@@ -55,6 +55,7 @@
 .provinceTable > thead small { display: block; font-weight: 400; color: var(--table-muted); font-size: .67rem; margin-top: 2px; }
 .provinceTable > tbody > tr > td, .provinceTable > tbody > tr > th { border-bottom: 1px solid var(--table-divider); padding: 8px; text-align: left; }
 .provinceTable > tbody > tr > th { font-weight: 500; min-width: 160px; }
+.provinceTable > tbody > tr { background: var(--table-bg); }
 .provinceTable > tbody > tr:not([data-tone]):nth-child(odd) { background: var(--table-alt); }
 .provinceTable > tbody > tr[data-tone=base] { background: var(--table-bg); }
 .provinceTable > tbody > tr[data-tone=alternate] { background: var(--table-alt); }
@@ -280,3 +281,10 @@
 .selectedArmyTable tbody th { font-weight: 500; }
 .selectedArmyTable tr[data-chosen=true] { background: #345476; }
 .selectedArmyTable tbody th small { display: block; color: #c8e2ff; font-size: .65rem; margin-top: 2px; }
+
+.provinceTable { --freeze-id: 0px; --freeze-name: 0px; }
+.provinceTable > thead > tr > [data-frozen], .provinceTable > tbody > tr > [data-frozen] { position: sticky; z-index: 2; }
+.provinceTable > thead > tr > [data-frozen] { z-index: 3; background: var(--table-head); }
+.provinceTable > tbody > tr > [data-frozen] { background: inherit; }
+.provinceTable [data-frozen=id] { left: var(--freeze-id); }
+.provinceTable [data-frozen=name] { left: var(--freeze-name); box-shadow: 1px 0 #698099, 5px 0 7px -4px #020b17; }
